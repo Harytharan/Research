@@ -1,0 +1,14 @@
+{
+    "blast": {
+        "pest": "Rice Stem Borer",
+        "solution": "Remove infected leaves, apply Tricyclazole fungicide, maintain proper water management."
+    },
+    "blight": {
+        "pest": "Brown Planthopper",
+        "solution": "Use resistant varieties, balanced fertilizer, and apply suitable bactericides."
+    },
+    "tungro": {
+        "pest": "Green Leafhopper",
+        "solution": "Use healthy seedlings, control leafhoppers with insecticides, and remove infected plants."
+    }
+}

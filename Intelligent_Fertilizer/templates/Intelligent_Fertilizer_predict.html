@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Input - Fertilizer Recommendation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-keyboard me-2"></i>Manual Input</h2>
+                <p class="mb-0">Enter field parameters for fertilizer recommendations</p>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('Intelligent_Fertilizer_predict') }}" id="predictForm">
+                    <h5 class="mb-3"><i class="fas fa-temperature-high text-primary me-2"></i>Soil Conditions</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Soil Temperature (°C)</label>
+                                <input type="number" name="soil_temp" class="form-control" 
+                                       step="0.1" min="0" max="50" value="28.5" required>
+                                <small class="text-muted">Range: 15-40°C</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Soil Moisture (%)</label>
+                                <input type="number" name="soil_moisture" class="form-control" 
+                                       step="0.1" min="0" max="100" value="65.5" required>
+                                <small class="text-muted">Range: 30-90%</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-cloud-sun text-info me-2"></i>Environmental Conditions</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Air Temperature (°C)</label>
+                                <input type="number" name="air_temp" class="form-control" 
+                                       step="0.1" min="0" max="50" value="30.2" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Air Humidity (%)</label>
+                                <input type="number" name="air_humidity" class="form-control" 
+                                       step="0.1" min="0" max="100" value="75.5" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-seedling text-success me-2"></i>Crop Information</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-leaf"></i> Growth Stage</label>
+                                <select name="growth_stage" class="form-select" required>
+                                    <option value="">Select Growth Stage</option>
+                                    {% for stage in growth_stages %}
+                                    <option value="{{ stage }}">{{ stage }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-bullseye"></i> Purpose</label>
+                                <select name="purpose" class="form-select" required>
+                                    <option value="">Select Purpose</option>
+                                    {% for purpose in purposes %}
+                                    <option value="{{ purpose }}">{{ purpose }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-magic me-2"></i>Get Recommendations
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

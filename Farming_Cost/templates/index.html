@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FarmCost Estimator{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <h1 class="display-6">
+                    <i class="fas fa-seedling text-success me-2"></i>
+                    Welcome to Paddy Farming Cost Estimator
+                </h1>
+                <p class="lead">Estimate farming costs using historical data and regional factors</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-rupee-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>LKR {{ "%.0f"|format(historical_data.cost_stats.mean) if historical_data.cost_stats else '0' }}</h3>
+                    <p>Average Total Cost</p>
+                    <small>Per farming cycle</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-weight-hanging"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "%.0f"|format(historical_data.yield_stats.mean) if historical_data.yield_stats else '0' }} kg</h3>
+                    <p>Average Yield</p>
+                    <small>Per acre</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-tag"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>LKR {{ "%.2f"|format(historical_data.cost_per_kg_stats.mean) if historical_data.cost_per_kg_stats else '0' }}</h3>
+                    <p>Cost per kg</p>
+                    <small>Average production cost</small>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('predict') }}" class="quick-action-card">
+                                <i class="fas fa-calculator fa-3x mb-3 text-primary"></i>
+                                <h5>Standard Estimate</h5>
+                                <p class="text-muted">Estimate costs using manual inputs</p>
+                                <span class="btn btn-outline-primary btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('sensor_predict') }}" class="quick-action-card">
+                                <i class="fas fa-microchip fa-3x mb-3 text-success"></i>
+                                <h5>Sensor-Based Estimate</h5>
+                                <p class="text-muted">Use environmental sensor data</p>
+                                <span class="btn btn-outline-success btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
+                            </a>
+                        </div>
+                         
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Cost Trend by Year</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i>Yield Trend by Year</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="yieldChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Data Summary -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-info"></i>Available Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        
+                        <div class="col-md-3">
+                            <h6>Soil Types</h6>
+                            <p class="text-muted">{{ historical_data.soil_types|join(', ') if historical_data.soil_types else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Seed Types</h6>
+                            <p class="text-muted">{{ historical_data.seed_types|join(', ') if historical_data.seed_types else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Seasons</h6>
+                            <p class="text-muted">{{ historical_data.seasons|join(', ') if historical_data.seasons else 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cost Chart
+    const costCtx = document.getElementById('costChart').getContext('2d');
+    new Chart(costCtx, {
+        type: 'line',
+        data: {
+            labels: {{ historical_data.recent_years|tojson if historical_data.recent_years else [] }},
+            datasets: [{
+                label: 'Total Cost (LKR)',
+                data: {{ historical_data.recent_costs|tojson if historical_data.recent_costs else [] }},
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Yield Chart
+    const yieldCtx = document.getElementById('yieldChart').getContext('2d');
+    new Chart(yieldCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ historical_data.recent_years|tojson if historical_data.recent_years else [] }},
+            datasets: [{
+                label: 'Yield (kg)',
+                data: {{ historical_data.recent_yields|tojson if historical_data.recent_yields else [] }},
+                backgroundColor: '#2ecc71',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

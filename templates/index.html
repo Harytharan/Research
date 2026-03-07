@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Paddy Agricultural Intelligence System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section with Date and Time -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-seedling text-success me-2"></i>
+                        Welcome, {{ current_user.username }}!
+                    </h1>
+                    <p class="lead mb-0">Your intelligent agricultural assistant for paddy farming</p>
+                </div>
+                <div class="text-end mt-3 mt-md-0">
+                    <div class="date-time-display bg-white bg-opacity-25 p-3 rounded-4">
+                        <div class="h4 mb-1" id="currentTime">--:--:--</div>
+                        <div class="h6 mb-0" id="currentDate">---, -- --- ----</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+ 
+
+    <!-- Quick Action Modules -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="section-card">
+                <div class="section-header">
+                    <h4><i class="fas fa-bolt text-warning me-2"></i>Quick Access Modules</h4>
+                    <p class="text-muted mb-0">Select a module to start your analysis</p>
+                </div>
+                <div class="section-body">
+                    <div class="row g-4">
+                        <!-- Farming Cost Module -->
+                        <div class="col-xl-3 col-lg-6">
+                            <div class="module-card farming-cost" onclick="location.href='{{ url_for('cost_predict') }}'">
+                                <div class="module-icon">
+                                    <i class="fas fa-rupee-sign"></i>
+                                </div>
+                                <div class="module-content">
+                                    <h5>Farming Cost Estimator</h5>
+                                    <p>Calculate production costs and optimize expenses</p>
+                                    <div class="module-meta">
+                                        <span class="badge bg-success">ML Model</span>
+                                        <span class="badge bg-info">Real-time</span>
+                                    </div>
+                                    <div class="module-footer">
+                                        <span class="btn-link">Access Module <i class="fas fa-arrow-right ms-1"></i></span>
+                                    </div>
+                                </div>
+                                <div class="module-bg-icon">
+                                    <i class="fas fa-chart-pie"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fertilizer Module -->
+                        <div class="col-xl-3 col-lg-6">
+                            <div class="module-card fertilizer" onclick="location.href='{{ url_for('Intelligent_Fertilizer_predict') }}'">
+                                <div class="module-icon">
+                                    <i class="fas fa-flask"></i>
+                                </div>
+                                <div class="module-content">
+                                    <h5>Fertilizer Advisor</h5>
+                                    <p>AI-powered fertilizer recommendations</p>
+                                    <div class="module-meta">
+                                        <span class="badge bg-success">Random Forest</span>
+                                        <span class="badge bg-warning">Top 3</span>
+                                    </div>
+                                    <div class="module-footer">
+                                        <span class="btn-link">Access Module <i class="fas fa-arrow-right ms-1"></i></span>
+                                    </div>
+                                </div>
+                                <div class="module-bg-icon">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pest Detection Module -->
+                        <div class="col-xl-3 col-lg-6">
+                            <div class="module-card pest" onclick="location.href='{{ url_for('pest_sensor_predict') }}'">
+                                <div class="module-icon">
+                                    <i class="fas fa-bug"></i>
+                                </div>
+                                <div class="module-content">
+                                    <h5>Pest Detection</h5>
+                                    <p>Identify pests via sensors or images</p>
+                                    <div class="module-meta">
+                                        <span class="badge bg-success">CNN</span>
+                                        <span class="badge bg-info">Image/Sensor</span>
+                                    </div>
+                                    <div class="module-footer">
+                                        <span class="btn-link">Access Module <i class="fas fa-arrow-right ms-1"></i></span>
+                                    </div>
+                                </div>
+                                <div class="module-bg-icon">
+                                    <i class="fas fa-microscope"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price & Demand Module -->
+                        <div class="col-xl-3 col-lg-6">
+                            <div class="module-card price" onclick="location.href='{{ url_for('Prices_Demand_predict') }}'">
+                                <div class="module-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="module-content">
+                                    <h5>Price & Demand</h5>
+                                    <p>Forecast market trends and demand</p>
+                                    <div class="module-meta">
+                                        <span class="badge bg-success">LSTM</span>
+                                        <span class="badge bg-info">XGBoost</span>
+                                    </div>
+                                    <div class="module-footer">
+                                        <span class="btn-link">Access Module <i class="fas fa-arrow-right ms-1"></i></span>
+                                    </div>
+                                </div>
+                                <div class="module-bg-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Options Grid -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <h5><i class="fas fa-calculator text-primary me-2"></i>Farming Cost Options</h5>
+                </div>
+                <div class="section-body">
+                    <div class="option-grid">
+                        <a href="{{ url_for('cost_predict') }}" class="option-item">
+                            <i class="fas fa-keyboard"></i>
+                            <span>Standard Input</span>
+                            <small>Manual entry</small>
+                        </a>
+                        <a href="{{ url_for('cost_sensor_predict') }}" class="option-item">
+                            <i class="fas fa-microchip"></i>
+                            <span>Sensor-Based</span>
+                            <small>Live data</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <h5><i class="fas fa-flask text-success me-2"></i>Fertilizer Options</h5>
+                </div>
+                <div class="section-body">
+                    <div class="option-grid">
+                        <a href="{{ url_for('Intelligent_Fertilizer_predict') }}" class="option-item">
+                            <i class="fas fa-keyboard"></i>
+                            <span>Manual Input</span>
+                            <small>Enter parameters</small>
+                        </a>
+                        <a href="{{ url_for('Intelligent_Fertilizer_sensor_predict') }}" class="option-item">
+                            <i class="fas fa-microchip"></i>
+                            <span>Sensor-Based</span>
+                            <small>Auto-detect</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <h5><i class="fas fa-bug text-warning me-2"></i>Pest Detection Options</h5>
+                </div>
+                <div class="section-body">
+                    <div class="option-grid">
+                        <a href="{{ url_for('pest_sensor_predict') }}" class="option-item">
+                            <i class="fas fa-microchip"></i>
+                            <span>Sensor Detection</span>
+                            <small>Environmental data</small>
+                        </a>
+                        <a href="{{ url_for('pest_image_predict') }}" class="option-item">
+                            <i class="fas fa-camera"></i>
+                            <span>Image Detection</span>
+                            <small>Upload photo</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <h5><i class="fas fa-chart-line text-info me-2"></i>Price & Demand Options</h5>
+                </div>
+                <div class="section-body">
+                    <div class="option-grid">
+                        <a href="{{ url_for('Prices_Demand_predict') }}" class="option-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Standard Forecast</span>
+                            <small>Historical data</small>
+                        </a>
+                        <a href="{{ url_for('Prices_Demand_sensor_predict') }}" class="option-item">
+                            <i class="fas fa-microchip"></i>
+                            <span>Sensor Forecast</span>
+                            <small>With NPK data</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+ 
+    <!-- Recent Activity & System Health -->
+    <div class="row">
+	
+ 
+
+        <!-- System Health -->
+        <div class="col-xl-6 mb-4">
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-heartbeat text-danger me-2"></i>System Health</h5>
+                </div>
+                <div class="section-body">
+                    <div class="health-list">
+                        <div class="health-item">
+                            <div class="health-info">
+                                <i class="fas fa-database text-primary"></i>
+                                <span>Database Connection</span>
+                            </div>
+                            <span class="badge bg-success">Healthy</span>
+                        </div>
+                        
+                        <div class="health-item">
+                            <div class="health-info">
+                                <i class="fas fa-brain text-success"></i>
+                                <span>ML Models</span>
+                            </div>
+                            <span class="badge bg-success">4/4 Active</span>
+                        </div>
+                        
+                       
+                        
+                        <div class="health-item">
+                            <div class="health-info">
+                                <i class="fas fa-cloud text-warning"></i>
+                                <span>API Services</span>
+                            </div>
+                            <span class="badge bg-success">Operational</span>
+                        </div>
+                        
+                        
+                    </div>
+                    
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update time and date
+    function updateDateTime() {
+        const now = new Date();
+        
+        // Format time
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true 
+        });
+        
+        // Format date
+        const dateString = now.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        
+        document.getElementById('currentTime').textContent = timeString;
+        document.getElementById('currentDate').textContent = dateString;
+    }
+    
+    // Update every second
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // Market Overview Chart
+    const marketCtx = document.getElementById('marketOverviewChart').getContext('2d');
+    new Chart(marketCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Price Trend', 'Demand Trend', 'Supply Trend'],
+            datasets: [{
+                data: [120.5, 850, 720],
+                backgroundColor: [
+                    'rgba(46, 125, 50, 0.8)',
+                    'rgba(33, 150, 243, 0.8)',
+                    'rgba(255, 152, 0, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(46, 125, 50, 1)',
+                    'rgba(33, 150, 243, 1)',
+                    'rgba(255, 152, 0, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Refresh sensor data via AJAX
+    function refreshSensorData() {
+        fetch('/api/latest-sensor')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Simple reload for demo
+                }
+            });
+    }
+
+    // Module card hover effects
+    document.querySelectorAll('.module-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+</script>
+{% endblock %}

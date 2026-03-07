@@ -1,0 +1,76 @@
+#include "DHT.h"
+#include <TinyGPS++.h>
+
+// ----------------- DHT22 Setup -----------------
+#define DHTPIN 4       // GPIO connected to DATA pin of DHT22
+#define DHTTYPE DHT22  // DHT 22 (AM2302)
+DHT dht(DHTPIN, DHTTYPE);
+
+// ----------------- GPS Setup -----------------
+TinyGPSPlus gps;
+#define GPS_RX 16
+#define GPS_TX 17
+#define GPS_BAUD 9600
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Initializing Sensors...");
+
+  // Initialize DHT22
+  dht.begin();
+  Serial.println("DHT22 Temperature & Humidity Sensor Initialized");
+
+  // Initialize GPS
+  Serial2.begin(GPS_BAUD, SERIAL_8N1, GPS_RX, GPS_TX);
+  Serial.println("GPS Neo-6M Initialized");
+  delay(2000);
+}
+
+void loop() {
+  // ----------- Read DHT22 -----------
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();      // Celsius
+  float f = dht.readTemperature(true);  // Fahrenheit
+
+  if (isnan(h) || isnan(t) || isnan(f)) {
+    Serial.println("Failed to read from DHT sensor!");
+  } else {
+    Serial.print("Humidity: ");
+    Serial.print(h);
+    Serial.print(" %\t");
+
+    Serial.print("Temperature: ");
+    Serial.print(t);
+    Serial.print(" °C ");
+    Serial.print(f);
+    Serial.println(" °F");
+  }
+
+  // ----------- Read GPS -----------
+  while (Serial2.available() > 0) {
+    char c = Serial2.read();
+    gps.encode(c);
+  }
+
+  if (gps.location.isValid()) {
+    Serial.print("Latitude : ");
+    Serial.println(gps.location.lat(), 6);
+
+    Serial.print("Longitude: ");
+    Serial.println(gps.location.lng(), 6);
+
+    Serial.print("Satellites: ");
+    Serial.println(gps.satellites.value());
+
+    Serial.print("Altitude (m): ");
+    Serial.println(gps.altitude.meters());
+
+    Serial.print("Speed (km/h): ");
+    Serial.println(gps.speed.kmph());
+  } else {
+    Serial.println("Waiting for GPS fix...");
+  }
+
+  Serial.println("-----------------------------");
+  delay(2000); // Wait 2 seconds before next reading
+}

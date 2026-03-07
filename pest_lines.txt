@@ -1,0 +1,64 @@
+80: PEST_OUTBREAK_DIR = os.path.join(BASE_DIR, 'Pest_outbreak')
+87: sys.path.insert(0, PEST_OUTBREAK_DIR)
+101: os.makedirs(os.path.join(PEST_OUTBREAK_DIR, 'uploads'), exist_ok=True)
+102: os.makedirs(os.path.join(PEST_OUTBREAK_DIR, 'static', 'images'), exist_ok=True)
+103: os.makedirs(os.path.join(PEST_OUTBREAK_DIR, 'models'), exist_ok=True)
+126: # Pest globals
+178: input_data.get("Pesticide_Cost (LKR)", 4000),
+198: # PEST OUTBREAK MODULE IMPORTS
+203: print("✅ Pest_outbreak modules loaded successfully")
+204: PEST_IMPORT_SUCCESS = True
+206: print(f"⚠️ Pest_outbreak import error: {e}")
+207: PEST_IMPORT_SUCCESS = False
+954: def init_pest():
+955: """Initialize Pest module"""
+957: print("\n🐛 Initializing Pest Detection module...")
+961: model_path = os.path.join(PEST_OUTBREAK_DIR, 'models', 'paddy_pest_rf.joblib')
+962: meta_path = os.path.join(PEST_OUTBREAK_DIR, 'models', 'paddy_meta.joblib')
+975: model_path = os.path.join(PEST_OUTBREAK_DIR, 'best_pest_model.h5')
+976: meta_path = os.path.join(PEST_OUTBREAK_DIR, 'paddy_meta.joblib')
+977: train_path = os.path.join(PEST_OUTBREAK_DIR, 'PestDataset', 'train')
+988: print(f"✅ Found {len(image_class_labels)} pest classes")
+1134: init_pest()
+1648: # PEST PREDICTION FUNCTIONS
+1652: """Predict pest from sensor features"""
+1655: "predicted_pest": "Brown Plant Hopper",
+1657: "recommended_action": "Apply appropriate pesticides and monitor regularly."
+1684: "predicted_pest": label,
+1691: "predicted_pest": "Brown Plant Hopper",
+1693: "recommended_action": "Apply appropriate pesticides and monitor regularly."
+1860: disease_model_path = os.path.join(PEST_OUTBREAK_DIR, 'NewDataone', 'paddy_disease_model.h5')
+1861: class_indices_path = os.path.join(PEST_OUTBREAK_DIR, 'NewDataone', 'class_indices.json')
+1862: pest_solutions_path = os.path.join(PEST_OUTBREAK_DIR, 'NewDataone', 'pest_solutions.json')
+1866: and os.path.exists(pest_solutions_path)
+1870: flash('Disease detection model is not loaded. Please add paddy_disease_model.h5, class_indices.json, and pest_solutions.json to Pest_outbreak/NewDataone.', 'warning')
+1888: newdataone_dir = os.path.join(PEST_OUTBREAK_DIR, 'NewDataone')
+1916: @app.route('/pest_index')
+1917: def pest_index():
+1918: return render_template('pest_index.html')
+2041: "Pesticide_Cost (LKR)": float(request.form.get('pesticide_cost', 4000)),
+2055: 'Pesticide': input_data["Pesticide_Cost (LKR)"],
+2116: "Pesticide_Cost (LKR)": float(request.form.get('pesticide_cost', 4000)),
+2130: 'Pesticide': input_data["Pesticide_Cost (LKR)"],
+2195: "Pesticide_Cost (LKR)": float(data.get('pesticide_cost', 4000)),
+2372: # PEST ROUTES
+2375: @app.route('/pest_image_predict', methods=['GET', 'POST'])
+2377: def pest_image_predict():
+2421: recommended_action = "Apply appropriate pesticides and monitor regularly."
+2424: 'predicted_pest': predicted_class_name,
+2436: return render_template('pest_results.html',
+2450: return redirect(url_for('pest_image_predict'))
+2453: return render_template('pest_image_predict.html')
+2457: @app.route('/pest_predict', methods=['GET', 'POST'])
+2459: def pest_predict():
+2476: return render_template('pest_results.html',
+2491: return redirect(url_for('pest_predict'))
+2494: return render_template('pest_predict.html',
+2499: @app.route('/pest_sensor_predict', methods=['GET', 'POST'])
+2501: def pest_sensor_predict():
+2518: return render_template('pest_results.html',
+2533: return redirect(url_for('pest_sensor_predict'))
+2536: return render_template('pest_sensor_predict.html',
+2539: @app.route('/api/pest_predict', methods=['POST'])
+2541: def api_pest_predict():
+3148: print(f"   Pest Detection: {'✅ Loaded' if tabular_model is not None else '⚠️ Fallback'}")

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Image Detection - Pest Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-camera me-2"></i>Image-Based Pest Detection</h2>
+                <p class="mb-0">Upload pest images for CNN-based classification</p>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('image_predict') }}" enctype="multipart/form-data" id="imageForm">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt fa-4x mb-3 text-primary"></i>
+                        <h5>Drag & Drop or Click to Upload</h5>
+                        <p class="text-muted">Supported formats: JPG, PNG, JPEG, GIF, BMP (Max 16MB)</p>
+                        <input type="file" name="file" id="fileInput" accept="image/*" style="display: none;">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-upload me-2"></i>Choose Image
+                        </button>
+                    </div>
+                    
+                    <div id="imagePreview" class="mt-4 text-center" style="display: none;">
+                        <img id="preview" src="#" alt="Preview" class="img-fluid rounded" style="max-height: 300px;">
+                        <p class="mt-2" id="fileName"></p>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearImage()">
+                            <i class="fas fa-times me-2"></i>Remove
+                        </button>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-lg w-100" id="submitBtn" disabled>
+                                <i class="fas fa-search me-2"></i>Analyze Image
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        
+
+            <!-- Image Tips -->
+            <div class="card mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb text-warning me-2"></i>Image Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Use clear, well-lit images</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Focus on the affected area</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Avoid blurry or dark images</li>
+                        <li><i class="fas fa-info-circle text-info me-2"></i> Supported formats: JPG, PNG, JPEG, GIF, BMP</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-area {
+    border: 3px dashed #2ecc71;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.upload-area:hover {
+    background: #e8f5e9;
+    border-color: #27ae60;
+}
+
+.sample-image-card {
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.sample-image-card:hover {
+    border-color: #2ecc71;
+    transform: scale(1.05);
+}
+</style>
+
+<script>
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const file = this.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            document.getElementById('preview').src = e.target.result;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('imagePreview').style.display = 'block';
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+        }
+        
+        reader.readAsDataURL(file);
+    }
+});
+
+function clearImage() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('uploadArea').style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+}
+
+function useSample(num) {
+    showToast(`Sample ${num} selected (demo feature)`, 'info');
+    // In real implementation, this would load a sample image
+}
+
+// Drag and drop
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = '#e8f5e9';
+});
+
+uploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = '#f8f9fa';
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = '#f8f9fa';
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        document.getElementById('fileInput').files = files;
+        const event = new Event('change', { bubbles: true });
+        document.getElementById('fileInput').dispatchEvent(event);
+    }
+});
+
+uploadArea.addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
+</script>
+{% endblock %}

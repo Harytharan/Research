@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor-Based Prediction - Paddy Predictor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Prediction</h2>
+                <p class="mb-0">Live serial sensor integration for current NPK readings</p>
+            </div>
+
+            <div class="form-card mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                    <h5 class="mb-2 mb-md-0">
+                        <i class="fas fa-satellite-dish text-success me-2"></i>Live Sensor Status
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="refreshSensorBtn">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" id="reconnectSensorBtn">
+                            <i class="fas fa-plug me-1"></i>Reconnect Sensor
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" id="useLiveValuesBtn">
+                            <i class="fas fa-download me-1"></i>Use Live Sensor Values
+                        </button>
+                    </div>
+                </div>
+
+                <div id="sensorWarnings" class="mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <div class="small text-muted">Connection</div>
+                            <div id="sensorConnection" class="fw-bold fs-5">
+                                {% if latest_sensor.connected %}
+                                    <span class="text-success">Connected</span>
+                                {% else %}
+                                    <span class="text-danger">Disconnected</span>
+                                {% endif %}
+                            </div>
+                            <div class="small text-muted mt-1">
+                                Port: <span id="sensorPort">{{ latest_sensor.port }}</span>
+                            </div>
+                            <div class="small text-muted">
+                                Baud: <span id="sensorBaud">{{ latest_sensor.baudrate }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <div class="small text-muted">Last Update</div>
+                            <div id="sensorLastUpdate" class="fw-bold">
+                                {{ latest_sensor.last_update or 'No reading yet' }}
+                            </div>
+                            <div class="small text-muted mt-2">Raw Serial Data</div>
+                            <div id="sensorRaw" class="small text-break">
+                                {{ latest_sensor.last_decoded or 'Waiting for sensor data...' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <div class="small text-muted mb-2">Current Live Readings</div>
+                            <div class="row text-center">
+                                <div class="col-4 mb-2">
+                                    <div class="fw-bold text-primary">N</div>
+                                    <div id="liveNitrogen">{{ latest_sensor.values.nitrogen }}</div>
+                                </div>
+                                <div class="col-4 mb-2">
+                                    <div class="fw-bold text-success">P</div>
+                                    <div id="livePhosphorus">{{ latest_sensor.values.phosphorus }}</div>
+                                </div>
+                                <div class="col-4 mb-2">
+                                    <div class="fw-bold text-warning">K</div>
+                                    <div id="livePotassium">{{ latest_sensor.values.potassium }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('sensor_predict') }}" id="sensorForm">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar-alt"></i> Start Date</label>
+                                <input type="date" name="start_date" class="form-control"
+                                       value="{{ today }}" readonly required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-clock"></i> Number of Days</label>
+                                <select name="n_days" class="form-select" required>
+                                    <option value="7">7 Days (1 Week)</option>
+                                    <option value="14">14 Days (2 Weeks)</option>
+                                    <option value="21">21 Days (3 Weeks)</option>
+                                    <option value="30">30 Days (1 Month)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-microchip text-success me-2"></i>Current NPK Sensor Readings</h5>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask text-primary"></i> Nitrogen (N)</label>
+                                <div class="input-group">
+                                    <input type="number" name="nitrogen" id="nitrogen"
+                                           class="form-control" step="0.1"
+                                           value="{{ latest_sensor.values.nitrogen }}" required>
+                                    <span class="input-group-text">mg/kg</span>
+                                </div>
+                                <small class="text-muted">Live current N value</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask text-success"></i> Phosphorus (P)</label>
+                                <div class="input-group">
+                                    <input type="number" name="phosphorus" id="phosphorus"
+                                           class="form-control" step="0.1"
+                                           value="{{ latest_sensor.values.phosphorus }}" required>
+                                    <span class="input-group-text">mg/kg</span>
+                                </div>
+                                <small class="text-muted">Live current P value</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask text-warning"></i> Potassium (K)</label>
+                                <div class="input-group">
+                                    <input type="number" name="potassium" id="potassium"
+                                           class="form-control" step="0.1"
+                                           value="{{ latest_sensor.values.potassium }}" required>
+                                    <span class="input-group-text">mg/kg</span>
+                                </div>
+                                <small class="text-muted">Live current K value</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-microchip me-2"></i>Predict with Current Live Sensor Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function showWarning(message, type = "warning") {
+        const box = document.getElementById("sensorWarnings");
+        box.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+
+    function setInputValues(sensorValues) {
+        document.getElementById("nitrogen").value = sensorValues.nitrogen ?? 520;
+        document.getElementById("phosphorus").value = sensorValues.phosphorus ?? 10;
+        document.getElementById("potassium").value = sensorValues.potassium ?? 10;
+    }
+
+    function updateLiveCard(sensor) {
+        document.getElementById("sensorConnection").innerHTML = sensor.connected
+            ? '<span class="text-success">Connected</span>'
+            : '<span class="text-danger">Disconnected</span>';
+
+        document.getElementById("sensorPort").textContent = sensor.port || "N/A";
+        document.getElementById("sensorBaud").textContent = sensor.baudrate || "N/A";
+        document.getElementById("sensorLastUpdate").textContent = sensor.last_update || "No reading yet";
+        document.getElementById("sensorRaw").textContent = sensor.last_decoded || "Waiting for sensor data...";
+
+        document.getElementById("liveNitrogen").textContent = sensor.values.nitrogen ?? "-";
+        document.getElementById("livePhosphorus").textContent = sensor.values.phosphorus ?? "-";
+        document.getElementById("livePotassium").textContent = sensor.values.potassium ?? "-";
+    }
+
+    async function fetchLatestSensor(updateForm = false) {
+        try {
+            const response = await fetch('{{ url_for("api_latest_sensor") }}');
+            const data = await response.json();
+
+            if (data.success) {
+                updateLiveCard(data.sensor);
+
+                if (updateForm) {
+                    setInputValues(data.sensor.values);
+                    showWarning("Live sensor values loaded into the prediction form.", "success");
+                }
+            } else {
+                showWarning("Could not load live sensor data.", "danger");
+            }
+        } catch (error) {
+            showWarning("Error reading live sensor data from server.", "danger");
+        }
+    }
+
+    async function reconnectSensor() {
+        try {
+            const response = await fetch('{{ url_for("api_reconnect_sensor") }}', {
+                method: 'POST'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                updateLiveCard(data.sensor);
+                showWarning("Sensor reconnection attempted.", "info");
+            } else {
+                showWarning(data.error || "Sensor reconnection failed.", "danger");
+            }
+        } catch (error) {
+            showWarning("Error reconnecting sensor.", "danger");
+        }
+    }
+
+    document.getElementById("refreshSensorBtn").addEventListener("click", function () {
+        fetchLatestSensor(false);
+    });
+
+    document.getElementById("reconnectSensorBtn").addEventListener("click", function () {
+        reconnectSensor();
+    });
+
+    document.getElementById("useLiveValuesBtn").addEventListener("click", function () {
+        fetchLatestSensor(true);
+    });
+
+    setInterval(() => fetchLatestSensor(false), 3000);
+</script>
+{% endblock %}

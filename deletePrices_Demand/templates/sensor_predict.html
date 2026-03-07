@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor-Based Prediction - Paddy Predictor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Prediction</h2>
+                <p class="mb-0">Integrate real-time NPK sensor readings for more accurate predictions</p>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('sensor_predict') }}" id="sensorForm">
+                    <!-- Date Selection -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar-alt"></i>Start Date</label>
+                                <input type="date" name="start_date" class="form-control" 
+                                       min="{{ today }}" value="{{ tomorrow }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-clock"></i>Number of Days</label>
+                                <select name="n_days" class="form-select" required>
+                                    <option value="7">7 Days (1 Week)</option>
+                                    <option value="14">14 Days (2 Weeks)</option>
+                                    <option value="21">21 Days (3 Weeks)</option>
+                                    <option value="30">30 Days (1 Month)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-microchip text-success me-2"></i>NPK Sensor Readings</h5>
+                    
+                    <div id="sensorWarnings" class="mb-3"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask text-primary"></i> Nitrogen (N)</label>
+                                <div class="input-group">
+                                    <input type="number" name="nitrogen" id="nitrogen" 
+                                           class="form-control" step="0.1" value="520" required>
+                                    <span class="input-group-text">mg/kg</span>
+                                </div>
+                                <small class="text-muted">Range: 450-600</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask text-success"></i> Phosphorus (P)</label>
+                                <div class="input-group">
+                                    <input type="number" name="phosphorus" id="phosphorus" 
+                                           class="form-control" step="0.1" value="10" required>
+                                    <span class="input-group-text">mg/kg</span>
+                                </div>
+                                <small class="text-muted">Range: 5-15</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask text-warning"></i> Potassium (K)</label>
+                                <div class="input-group">
+                                    <input type="number" name="potassium" id="potassium" 
+                                           class="form-control" step="0.1" value="10" required>
+                                    <span class="input-group-text">mg/kg</span>
+                                </div>
+                                <small class="text-muted">Range: 5-15</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3 mt-4"><i class="fas fa-cloud-sun text-info me-2"></i>Weather Conditions (Optional)</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud-rain"></i> Rainfall</label>
+                                <div class="input-group">
+                                    <input type="number" name="rainfall" class="form-control" 
+                                           step="0.1" value="50">
+                                    <span class="input-group-text">mm</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Temperature</label>
+                                <div class="input-group">
+                                    <input type="number" name="temperature" class="form-control" 
+                                           step="0.1" value="27">
+                                    <span class="input-group-text">°C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-microchip me-2"></i>Predict with Sensor Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+             
+        </div>
+    </div>
+</div>
+{% endblock %}

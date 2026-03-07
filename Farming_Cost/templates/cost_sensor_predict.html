@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor-Based Estimate - FarmCost Estimator{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Cost Estimation</h2>
+                <p class="mb-0">Use environmental sensor data for more accurate estimates</p>
+            </div>
+
+            <div class="form-card">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Sensor Mode:</strong> Enter values manually or connect to sensors for real-time data
+                </div>
+
+                <form method="POST" action="{{ url_for('sensor_predict') }}" id="sensorForm">
+                    <!-- GPS Coordinates -->
+                    <h5 class="mb-3"><i class="fas fa-satellite text-primary me-2"></i>GPS Coordinates</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-map-pin"></i> Latitude</label>
+                                <div class="input-group">
+                                    <input type="number" name="latitude" id="latitude" class="form-control" step="0.0001" value="7.35" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="getGPS()">
+                                        <i class="fas fa-location-dot"></i> Get GPS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-map-pin"></i> Longitude</label>
+                                <div class="input-group">
+                                    <input type="number" name="longitude" id="longitude" class="form-control" step="0.0001" value="81.65" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="getGPS()">
+                                        <i class="fas fa-location-dot"></i> Get GPS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Environmental Sensors -->
+                    <h5 class="mb-3"><i class="fas fa-cloud-sun text-info me-2"></i>Environmental Sensors</h5>
+                    <div id="sensorWarnings" class="mb-3"></div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
+                                <div class="input-group">
+                                    <input type="number" name="temperature" id="temperature" class="form-control" step="0.1" value="30.5" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('temperature')">
+                                        <i class="fas fa-sync"></i> Read
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
+                                <div class="input-group">
+                                    <input type="number" name="humidity" id="humidity" class="form-control" step="0.1" value="85" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('humidity')">
+                                        <i class="fas fa-sync"></i> Read
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud-rain"></i> Rainfall (mm)</label>
+                                <input type="number" name="rainfall" class="form-control" step="0.1" value="2200" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Farm Details -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-tractor text-success me-2"></i>Farm Details</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar"></i> Year</label>
+                                <input type="number" name="year" class="form-control" value="{{ current_year }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud-sun"></i> Season</label>
+                                <select name="season" class="form-select" required>
+                                    {% for season in seasons %}
+                                    <option value="{{ season }}">{{ season }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-mountain"></i> Soil Type</label>
+                                <select name="soil_type" class="form-select" required>
+                                    {% for soil in soil_types %}
+                                    <option value="{{ soil }}">{{ soil }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-seedling"></i> Seed Type</label>
+                                <select name="seed_type" class="form-select" required>
+                                    {% for seed in seed_types %}
+                                    <option value="{{ seed }}">{{ seed }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-chart-area"></i> Area (acres)</label>
+                                <input type="number" name="area" class="form-control" step="0.1" value="2.5" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Breakdown (same as standard form) -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-rupee-sign text-warning me-2"></i>Cost Breakdown (LKR)</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Seed Cost</label>
+                                <input type="number" name="seed_cost" class="form-control" step="100" value="8000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Fertilizer Cost</label>
+                                <input type="number" name="fertilizer_cost" class="form-control" step="100" value="15000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Pesticide Cost</label>
+                                <input type="number" name="pesticide_cost" class="form-control" step="100" value="4000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Labor Cost</label>
+                                <input type="number" name="labor_cost" class="form-control" step="100" value="25000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Water Cost</label>
+                                <input type="number" name="water_cost" class="form-control" step="100" value="5000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Machinery Cost</label>
+                                <input type="number" name="machinery_cost" class="form-control" step="100" value="10000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Other Costs</label>
+                                <input type="number" name="other_costs" class="form-control" step="100" value="2000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-microchip me-2"></i>Estimate with Sensor Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sensor Tips -->
+            
+        </div>
+    </div>
+</div>
+
+<script>
+function getGPS() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('latitude').value = position.coords.latitude.toFixed(4);
+            document.getElementById('longitude').value = position.coords.longitude.toFixed(4);
+            showToast('GPS coordinates updated!', 'success');
+        }, function(error) {
+            showToast('Error getting GPS: ' + error.message, 'danger');
+        });
+    } else {
+        showToast('Geolocation not supported', 'warning');
+    }
+}
+
+function readSensor(sensor) {
+    // Simulate sensor readings
+    let value;
+    if (sensor === 'temperature') {
+        value = (25 + Math.random() * 10).toFixed(1);
+        document.getElementById('temperature').value = value;
+    } else if (sensor === 'humidity') {
+        value = (70 + Math.random() * 20).toFixed(1);
+        document.getElementById('humidity').value = value;
+    }
+    showToast(`${sensor.charAt(0).toUpperCase() + sensor.slice(1)} reading: ${value}`, 'info');
+}
+
+function showToast(message, type) {
+    const toast = $(`
+        <div class="toast align-items-center text-white bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `);
+    
+    $('body').append(toast);
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+</script>
+{% endblock %}

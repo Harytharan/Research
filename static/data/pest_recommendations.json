@@ -1,0 +1,163 @@
+{
+  "aphids": {
+    "Early": {
+      "Mild": "Apply neem oil spray or potassium-based fertilizer.",
+      "Moderate": "Use insecticidal soap + balanced NPK fertilizer.",
+      "Severe": "Apply systemic insecticide and nitrogen-rich fertilizer."
+    },
+    "Mid": {
+      "Mild": "Apply neem oil spray and light nitrogen fertilizer.",
+      "Moderate": "Use insecticidal soap + balanced NPK fertilizer.",
+      "Severe": "Apply systemic insecticide and nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Use neem oil spray only.",
+      "Moderate": "Apply mild insecticide + potassium fertilizer.",
+      "Severe": "Use systemic insecticide carefully + potassium fertilizer."
+    }
+  },
+
+  "armyworm": {
+    "Early": {
+      "Mild": "Use Bacillus thuringiensis spray.",
+      "Moderate": "Apply light pesticide + nitrogen fertilizer.",
+      "Severe": "Use strong pesticide + nitrogen-rich fertilizer."
+    },
+    "Mid": {
+      "Mild": "Use Bacillus thuringiensis spray.",
+      "Moderate": "Apply pesticide + potash fertilizer.",
+      "Severe": "Use strong pesticide + balanced NPK fertilizer."
+    },
+    "Late": {
+      "Mild": "Manual removal + neem spray.",
+      "Moderate": "Apply mild pesticide + potassium fertilizer.",
+      "Severe": "Use chemical pesticide carefully + potassium fertilizer."
+    }
+  },
+
+  "beetle": {
+    "Early": {
+      "Mild": "Neem spray + compost fertilizer.",
+      "Moderate": "Apply pesticide + phosphorus fertilizer.",
+      "Severe": "Use chemical pesticide + NPK booster."
+    },
+    "Mid": {
+      "Mild": "Neem spray + organic compost.",
+      "Moderate": "Apply pesticide + balanced NPK fertilizer.",
+      "Severe": "Use chemical pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Neem spray only.",
+      "Moderate": "Apply mild pesticide + potassium fertilizer.",
+      "Severe": "Use pesticide carefully + potassium fertilizer."
+    }
+  },
+
+  "bollworm": {
+    "Early": {
+      "Mild": "Neem oil spray + organic fertilizer.",
+      "Moderate": "Apply pesticide + phosphorus-rich fertilizer.",
+      "Severe": "Use chemical pesticide + high nitrogen fertilizer."
+    },
+    "Mid": {
+      "Mild": "Neem oil spray + compost.",
+      "Moderate": "Apply pesticide + balanced NPK fertilizer.",
+      "Severe": "Chemical pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Neem spray.",
+      "Moderate": "Apply mild pesticide + potassium fertilizer.",
+      "Severe": "Chemical pesticide carefully + potassium fertilizer."
+    }
+  },
+
+  "grasshopper": {
+    "Early": {
+      "Mild": "Neem extract spray.",
+      "Moderate": "Apply pest control powder + balanced fertilizer.",
+      "Severe": "Use chemical pesticide + nitrogen fertilizer."
+    },
+    "Mid": {
+      "Mild": "Neem extract spray.",
+      "Moderate": "Apply pesticide + balanced NPK fertilizer.",
+      "Severe": "Chemical pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Manual removal.",
+      "Moderate": "Apply mild pesticide + potassium fertilizer.",
+      "Severe": "Use chemical pesticide carefully."
+    }
+  },
+
+  "mites": {
+    "Early": {
+      "Mild": "Apply sulfur spray.",
+      "Moderate": "Use acaricide + potash fertilizer.",
+      "Severe": "Apply systemic pesticide + nitrogen fertilizer."
+    },
+    "Mid": {
+      "Mild": "Sulfur spray.",
+      "Moderate": "Use acaricide + balanced fertilizer.",
+      "Severe": "Systemic pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Sulfur spray only.",
+      "Moderate": "Apply mild acaricide + potassium fertilizer.",
+      "Severe": "Systemic pesticide carefully."
+    }
+  },
+
+  "mosquito": {
+    "Early": {
+      "Mild": "Drain water + organic fertilizer.",
+      "Moderate": "Apply biological control + balanced fertilizer.",
+      "Severe": "Use pesticide + nitrogen fertilizer."
+    },
+    "Mid": {
+      "Mild": "Drain water + compost fertilizer.",
+      "Moderate": "Biological control + balanced NPK fertilizer.",
+      "Severe": "Pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Drain water.",
+      "Moderate": "Biological control.",
+      "Severe": "Use pesticide carefully."
+    }
+  },
+
+  "sawfly": {
+    "Early": {
+      "Mild": "Neem spray + compost.",
+      "Moderate": "Apply pesticide + phosphorus fertilizer.",
+      "Severe": "Chemical pesticide + NPK fertilizer."
+    },
+    "Mid": {
+      "Mild": "Neem spray.",
+      "Moderate": "Apply pesticide + balanced fertilizer.",
+      "Severe": "Chemical pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Neem spray.",
+      "Moderate": "Mild pesticide + potassium fertilizer.",
+      "Severe": "Chemical pesticide carefully."
+    }
+  },
+
+  "stem_borer": {
+    "Early": {
+      "Mild": "Neem oil + light fertilizer.",
+      "Moderate": "Apply pesticide + phosphorus-rich fertilizer.",
+      "Severe": "Systemic pesticide + NPK nitrogen booster."
+    },
+    "Mid": {
+      "Mild": "Neem oil spray.",
+      "Moderate": "Apply pesticide + balanced NPK fertilizer.",
+      "Severe": "Systemic pesticide + nitrogen booster."
+    },
+    "Late": {
+      "Mild": "Neem oil spray.",
+      "Moderate": "Mild pesticide + potassium fertilizer.",
+      "Severe": "Systemic pesticide carefully."
+    }
+  }
+}

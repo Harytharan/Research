@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — PaddyPredict</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green-50: #f0fdf4; --green-100: #dcfce7; --green-200: #bbf7d0;
+            --green-400: #4ade80; --green-500: #22c55e; --green-600: #16a34a; --green-700: #15803d;
+            --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0; --slate-300: #cbd5e1;
+            --slate-400: #94a3b8; --slate-500: #64748b; --slate-600: #475569; --slate-700: #334155;
+            --slate-800: #1e293b; --slate-900: #0f172a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--green-50) 0%, var(--slate-50) 50%, #fff 100%);
+            position: relative; overflow-x: hidden; padding: 40px 0;
+        }
+        body::before {
+            content: ''; position: absolute; top: -30%; right: -15%;
+            width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(34,197,94,.08) 0%, transparent 70%);
+        }
+        body::after {
+            content: ''; position: absolute; bottom: -25%; left: -10%;
+            width: 500px; height: 500px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(22,163,74,.06) 0%, transparent 70%);
+        }
+        .auth-container { position: relative; z-index: 2; width: 100%; max-width: 480px; padding: 20px; }
+        .auth-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 28px; text-decoration: none; }
+        .auth-logo i { font-size: 2rem; color: var(--green-600); }
+        .auth-logo span { font-weight: 800; font-size: 1.6rem; color: var(--slate-900); }
+        .auth-card {
+            background: #fff; border-radius: 24px; padding: 36px 36px;
+            border: 1px solid var(--slate-100);
+            box-shadow: 0 20px 60px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+        }
+        .auth-card h2 { font-size: 1.5rem; font-weight: 800; color: var(--slate-900); margin-bottom: 4px; }
+        .auth-card .subtitle { color: var(--slate-500); font-size: .9rem; margin-bottom: 24px; }
+        .form-label { font-weight: 600; color: var(--slate-700); font-size: .86rem; margin-bottom: 5px; }
+        .form-label i { color: var(--green-600); }
+        .form-control {
+            border: 1.5px solid var(--slate-200); border-radius: 12px;
+            padding: 11px 16px; font-size: .93rem; font-family: 'Inter', sans-serif;
+            transition: all .2s; background: var(--slate-50);
+        }
+        .form-control:focus { border-color: var(--green-500); box-shadow: 0 0 0 3px rgba(34,197,94,.12); background: #fff; outline: none; }
+        .password-wrapper { position: relative; }
+        .password-toggle {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--slate-400); cursor: pointer; font-size: 1rem;
+        }
+        .password-toggle:hover { color: var(--green-600); }
+        .form-check-input:checked { background-color: var(--green-600); border-color: var(--green-600); }
+        .terms-link { color: var(--green-600); text-decoration: none; font-weight: 500; }
+        .terms-link:hover { text-decoration: underline; }
+        .btn-auth {
+            width: 100%; padding: 13px; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 700; color: #fff;
+            background: linear-gradient(135deg, var(--green-600), var(--green-500));
+            box-shadow: 0 4px 14px rgba(22,163,74,.3); transition: all .25s; cursor: pointer;
+        }
+        .btn-auth:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.4); }
+        .auth-footer { text-align: center; margin-top: 20px; font-size: .9rem; color: var(--slate-500); }
+        .auth-footer a { color: var(--green-600); font-weight: 600; text-decoration: none; }
+        .auth-footer a:hover { text-decoration: underline; }
+        .back-link { display: block; text-align: center; margin-top: 16px; color: var(--slate-400); font-size: .85rem; text-decoration: none; }
+        .back-link:hover { color: var(--green-600); }
+        .text-danger { font-size: .82rem; }
+        .strength-bar { height: 4px; border-radius: 4px; background: var(--slate-200); margin-top: 8px; overflow: hidden; }
+        .strength-bar .bar { height: 100%; border-radius: 4px; transition: width .3s, background .3s; width: 0; }
+        .strength-text { font-size: .78rem; color: var(--slate-500); margin-top: 4px; }
+        .match-msg { font-size: .78rem; margin-top: 4px; }
+        .text-muted-hint { font-size: .78rem; color: var(--slate-400); margin-top: 4px; }
+
+        .flash-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; max-width: 440px; width: 90%; }
+        .flash-container .alert { border-radius: 12px; border: none; padding: 12px 18px; font-size: .88rem; box-shadow: 0 6px 20px rgba(0,0,0,.1); animation: slideDown .4s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'info' %}info-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="auth-container">
+        <a href="{{ url_for('landing') }}" class="auth-logo">
+            <i class="fas fa-seedling"></i>
+            <span>PaddyPredict</span>
+        </a>
+
+        <div class="auth-card">
+            <h2>Create Account</h2>
+            <p class="subtitle">Join PaddyPredict for smart farming insights</p>
+
+            <form method="POST" action="{{ url_for('register') }}" id="registerForm">
+                {{ form.hidden_tag() }}
+
+                <!-- Username -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-user me-2"></i>Username</label>
+                    {{ form.username(class="form-control", placeholder="Choose a username", id="username") }}
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="text-danger mt-1"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="text-muted-hint"><i class="fas fa-info-circle me-1"></i>2–50 characters</div>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-envelope me-2"></i>Email</label>
+                    {{ form.email(class="form-control", placeholder="Enter your email", id="email") }}
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            <div class="text-danger mt-1"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-lock me-2"></i>Password</label>
+                    <div class="password-wrapper">
+                        {{ form.password(class="form-control", placeholder="Choose a password", id="password") }}
+                        <button type="button" class="password-toggle" onclick="togglePw('password','icon1')">
+                            <i class="fas fa-eye" id="icon1"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <div class="text-danger mt-1"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="strength-bar"><div class="bar" id="strengthBar"></div></div>
+                    <div class="strength-text" id="strengthText"><i class="fas fa-info-circle me-1"></i>Must include uppercase, lowercase, and number</div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-lock me-2"></i>Confirm Password</label>
+                    <div class="password-wrapper">
+                        {{ form.password2(class="form-control", placeholder="Confirm your password", id="password2") }}
+                        <button type="button" class="password-toggle" onclick="togglePw('password2','icon2')">
+                            <i class="fas fa-eye" id="icon2"></i>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}
+                        {% for error in form.password2.errors %}
+                            <div class="text-danger mt-1"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="match-msg" id="matchMsg"></div>
+                </div>
+
+                <!-- Terms -->
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="terms" required>
+                    <label class="form-check-label" for="terms" style="font-size:.86rem; color:var(--slate-600);">
+                        I agree to the <a href="#" class="terms-link">Terms</a> and <a href="#" class="terms-link">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-auth" id="registerBtn">
+                    <i class="fas fa-user-plus me-2"></i>Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+            </div>
+        </div>
+
+        <a href="{{ url_for('landing') }}" class="back-link">
+            <i class="fas fa-arrow-left me-1"></i> Back to Home
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePw(fid, iid) {
+            const f = document.getElementById(fid), i = document.getElementById(iid);
+            if (f.type === 'password') { f.type = 'text'; i.classList.replace('fa-eye','fa-eye-slash'); }
+            else { f.type = 'password'; i.classList.replace('fa-eye-slash','fa-eye'); }
+        }
+
+        const pw = document.getElementById('password'), pw2 = document.getElementById('password2');
+        const bar = document.getElementById('strengthBar'), stxt = document.getElementById('strengthText');
+        const mmsg = document.getElementById('matchMsg');
+
+        pw.addEventListener('input', () => {
+            const v = pw.value; let s = 0;
+            if (v.length >= 6) s += 25;
+            if (/[A-Z]/.test(v)) s += 25;
+            if (/[a-z]/.test(v)) s += 25;
+            if (/\d/.test(v)) s += 25;
+            bar.style.width = s + '%';
+            if (s === 100) { bar.style.background = '#22c55e'; stxt.innerHTML = '<i class="fas fa-check-circle me-1" style="color:#22c55e"></i>Strong password'; }
+            else if (s >= 50) { bar.style.background = '#f59e0b'; stxt.innerHTML = '<i class="fas fa-exclamation-circle me-1" style="color:#f59e0b"></i>Medium strength'; }
+            else { bar.style.background = '#ef4444'; stxt.innerHTML = '<i class="fas fa-info-circle me-1" style="color:#ef4444"></i>Weak password'; }
+            checkMatch();
+        });
+
+        pw2.addEventListener('input', checkMatch);
+        function checkMatch() {
+            if (!pw2.value) { mmsg.innerHTML = ''; return; }
+            if (pw.value === pw2.value) { mmsg.innerHTML = '<i class="fas fa-check-circle me-1" style="color:#22c55e"></i><span style="color:#22c55e">Passwords match</span>'; }
+            else { mmsg.innerHTML = '<i class="fas fa-times-circle me-1" style="color:#ef4444"></i><span style="color:#ef4444">Passwords do not match</span>'; }
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            if (!document.getElementById('terms').checked) { e.preventDefault(); alert('Please accept the Terms'); }
+            if (pw.value !== pw2.value) { e.preventDefault(); alert('Passwords do not match'); }
+        });
+
+        setTimeout(() => { document.querySelectorAll('.flash-container .alert').forEach(a => { a.style.transition='opacity .4s'; a.style.opacity='0'; setTimeout(()=>a.remove(),400); }); }, 4000);
+    </script>
+</body>
+</html>

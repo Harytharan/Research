@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Paddy Predictor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <h1 class="display-6">
+                    <i class="fas fa-seedling text-success me-2"></i>
+                    Welcome to Paddy Price & Demand Predictor
+                </h1>
+                <p class="lead">Advanced time-series forecasting with sentiment analysis and sensor integration</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>₨ {{ "%.2f"|format(historical_data.price_stats.mean) if historical_data.price_stats else '0.00' }}</h3>
+                    <p>Average Price (LKR/kg)</p>
+                    <small>Last 30 days</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-weight-hanging"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "%.0f"|format(historical_data.demand_stats.mean) if historical_data.demand_stats else '0' }}</h3>
+                    <p>Average Demand (Tons)</p>
+                    <small>Per day</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ historical_data.date_range.total_days if historical_data.date_range else '0' }}</h3>
+                    <p>Days of Data</p>
+                    <small>{{ historical_data.date_range.start if historical_data.date_range else 'N/A' }} to {{ historical_data.date_range.end if historical_data.date_range else 'N/A' }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ historical_data.regions|length if historical_data.regions else '0' }}</h3>
+                    <p>Regions Covered</p>
+                    <small>{{ historical_data.regions|join(', ') if historical_data.regions else 'N/A' }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('predict') }}" class="quick-action-card">
+                                <i class="fas fa-chart-line fa-3x mb-3 text-primary"></i>
+                                <h5>Standard Prediction</h5>
+                                <p class="text-muted">Predict prices and demand using historical data</p>
+                                <span class="btn btn-outline-primary btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('sensor_predict') }}" class="quick-action-card">
+                                <i class="fas fa-microchip fa-3x mb-3 text-success"></i>
+                                <h5>Sensor-Based Prediction</h5>
+                                <p class="text-muted">Use NPK sensor readings for accurate predictions</p>
+                                <span class="btn btn-outline-success btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
+                            </a>
+                        </div>
+                         
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Trends -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Recent Price Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i>Recent Demand Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="demandChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-robot me-2 text-purple"></i>Model Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="model-status-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-brain fa-2x me-3 text-primary"></i>
+                                    <div>
+                                        <h6 class="mb-1">LSTM Price Model</h6>
+                                        <p class="mb-0 text-muted">
+                                            {% if models_loaded %}
+                                            <span class="badge bg-success">Active</span> Window: 21 days
+                                            {% else %}
+                                            <span class="badge bg-danger">Not Loaded</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="model-status-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tree fa-2x me-3 text-success"></i>
+                                    <div>
+                                        <h6 class="mb-1">XGBoost Demand Model</h6>
+                                        <p class="mb-0 text-muted">
+                                            {% if models_loaded %}
+                                            <span class="badge bg-success">Active</span> Features: 50+
+                                            {% else %}
+                                            <span class="badge bg-danger">Not Loaded</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Price Chart
+    const priceCtx = document.getElementById('priceChart').getContext('2d');
+    new Chart(priceCtx, {
+        type: 'line',
+        data: {
+            labels: {{ historical_data.recent_dates|tojson if historical_data.recent_dates else [] }},
+            datasets: [{
+                label: 'Price (LKR/kg)',
+                data: {{ historical_data.recent_prices|tojson if historical_data.recent_prices else [] }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Demand Chart
+    const demandCtx = document.getElementById('demandChart').getContext('2d');
+    new Chart(demandCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ historical_data.recent_dates|tojson if historical_data.recent_dates else [] }},
+            datasets: [{
+                label: 'Demand (Tons)',
+                data: {{ historical_data.recent_demand|tojson if historical_data.recent_demand else [] }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+</script>
+{% endblock %}

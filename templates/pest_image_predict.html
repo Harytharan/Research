@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Image-Based Pest Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Welcome Card -->
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-camera me-2"></i>Image-Based Pest Detection</h2>
+                <p class="mb-0">Upload an image of the pest for AI-powered identification</p>
+            </div>
+
+            <!-- Upload Form Card -->
+            <div class="form-card">
+                <form method="POST" enctype="multipart/form-data" id="pestForm">
+                    <!-- Image Upload -->
+                    <div class="form-group mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-image text-primary me-2"></i>Select Pest Image
+                        </label>
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" name="file" id="fileInput" class="file-input" accept="image/*" required>
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h5>Drag & Drop or Click to Upload</h5>
+                            <p class="text-muted">Supported formats: JPG, PNG, JPEG, GIF (Max 16MB)</p>
+                            <div id="filePreview" class="file-preview"></div>
+                        </div>
+                    </div>
+
+                    <!-- Growth Stage Selection -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label><i class="fas fa-seedling text-success me-2"></i>Growth Stage</label>
+                                <select name="growth_stage" class="form-select" required>
+                                    <option value="">Select Growth Stage</option>
+                                    {% for stage in growth_stages %}
+                                    <option value="{{ stage }}">{{ stage }} Stage</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Current growth stage of the crop</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                 
+                             <select name="severity" class="form-select" style="display:none;">
+    <option value="Mild" selected>Mild</option>
+</select>
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+                                <i class="fas fa-search me-2"></i>Detect Pest
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Information Card -->
+            <div class="info-card mt-4">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-robot fa-2x text-primary mb-2"></i>
+                        <h6>CNN Model</h6>
+                        <small class="text-muted">Deep Learning</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                        <h6>High Accuracy</h6>
+                        <small class="text-muted">95%+ Detection</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                        <h6>Fast Results</h6>
+                        <small class="text-muted">Under 2 seconds</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-area {
+    border: 3px dashed var(--gray-light);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--light);
+    cursor: pointer;
+    transition: var(--transition-normal);
+    position: relative;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-green);
+    background: rgba(46, 125, 50, 0.05);
+}
+
+.upload-area.dragover {
+    border-color: var(--primary-green);
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: var(--primary-green);
+    margin-bottom: 1rem;
+}
+
+.file-preview {
+    margin-top: 1rem;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.file-preview img {
+    width: 100%;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+</style>
+
+<script>
+// File upload preview and drag & drop
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const filePreview = document.getElementById('filePreview');
+const submitBtn = document.getElementById('submitBtn');
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop area
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight() {
+    uploadArea.classList.add('dragover');
+}
+
+function unhighlight() {
+    uploadArea.classList.remove('dragover');
+}
+
+// Handle dropped files
+uploadArea.addEventListener('drop', handleDrop, false);
+fileInput.addEventListener('change', handleFiles, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    fileInput.files = files;
+    handleFiles({ target: { files: files } });
+}
+
+function handleFiles(e) {
+    const files = e.target.files;
+    if (files.length > 0) {
+        const file = files[0];
+        
+        // Check file size
+        if (file.size > 16 * 1024 * 1024) {
+            alert('File size must be less than 16MB');
+            fileInput.value = '';
+            filePreview.innerHTML = '';
+            return;
+        }
+        
+        // Preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            filePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        }
+        reader.readAsDataURL(file);
+        
+        // Update upload area text
+        document.querySelector('.upload-area h5').textContent = file.name;
+    }
+}
+
+// Form submission loading state
+document.getElementById('pestForm').addEventListener('submit', function() {
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+});
+</script>
+{% endblock %}

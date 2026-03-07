@@ -1,0 +1,64 @@
+#include <Arduino.h>
+#include <math.h>
+
+#define SEALEVELPRESSURE_HPA (1013.25)
+#define LDR_PIN 33   // ESP32 ADC pin
+
+// Simulated BMP280 values
+float temperature = 25.0;
+float pressure    = 1010.0;
+float altitude    = 50.0;
+
+void setup() {
+  Serial.begin(115200);
+  randomSeed(analogRead(0)); // Initialize random
+
+  // Setup LDR
+  analogReadResolution(12);       // 0 - 4095
+  analogSetAttenuation(ADC_11db); // Full 0–3.3V range
+
+  Serial.println("Weather Station with LDR (Simulated + Real)");
+}
+
+// Function to simulate smooth realistic sensor values
+float smoothRandom(float value, float min, float max, float maxDelta) {
+  float delta = ((random(-100, 101)) / 100.0) * maxDelta;
+  value += delta;
+  if (value < min) value = min;
+  if (value > max) value = max;
+  return value;
+}
+
+void loop() {
+  // --- Simulate BMP280 ---
+  temperature = smoothRandom(temperature, 20.0, 35.0, 0.2); // ±0.2°C per update
+  pressure    = smoothRandom(pressure, 980.0, 1050.0, 0.5);  // ±0.5 hPa
+  altitude    = 44330.0 * (1 - pow(pressure / SEALEVELPRESSURE_HPA, 0.1903));
+
+  Serial.print("Temperature: ");
+  Serial.print(temperature, 1);
+  Serial.println(" °C");
+
+  Serial.print("Pressure: ");
+  Serial.print(pressure, 1);
+  Serial.println(" hPa");
+
+  Serial.print("Altitude: ");
+  Serial.print(altitude, 1);
+  Serial.println(" m");
+
+  // --- Read LDR ---
+  int analogValue = analogRead(LDR_PIN);
+  Serial.print("LDR Analog Value = ");
+  Serial.print(analogValue);
+  Serial.print(" -> ");
+
+  if (analogValue > 3500) Serial.println("Very Bright"); // inverted
+  else if (analogValue > 2800) Serial.println("Bright");
+  else if (analogValue > 1200) Serial.println("Medium");
+  else if (analogValue > 300) Serial.println("Dark");
+  else Serial.println("Very Dark");
+
+  Serial.println("------------------------");
+  delay(2000); // update every 2 sec
+}

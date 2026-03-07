@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Results - Paddy Predictor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <h2><i class="fas fa-chart-line me-2"></i>{{ prediction_type }} Prediction Results</h2>
+                <p class="mb-0">Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>₨ {{ "%.2f"|format(results.avg_price) }}</h3>
+                    <p>Average Price</p>
+                    <small>Over {{ results.dates|length }} days</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-weight-hanging"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "%.0f"|format(results.avg_demand) }} Tons</h3>
+                    <p>Average Demand</p>
+                    <small>Per day</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ results.price_trend }}</h3>
+                    <p>Price Trend</p>
+                    <small>{{ results.price_range[0]|round(2) }} - {{ results.price_range[1]|round(2) }} LKR/kg</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ results.demand_trend }}</h3>
+                    <p>Demand Trend</p>
+                    <small>{{ results.demand_range[0]|round(0) }} - {{ results.demand_range[1]|round(0) }} Tons</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if results.sensor_data %}
+    <!-- Sensor Data Used -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-microchip me-2 text-success"></i>Sensor Data Used</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 col-6 mb-2">
+                            <strong>Nitrogen:</strong> {{ results.sensor_data.nitrogen }} mg/kg
+                        </div>
+                        <div class="col-md-2 col-6 mb-2">
+                            <strong>Phosphorus:</strong> {{ results.sensor_data.phosphorus }} mg/kg
+                        </div>
+                        <div class="col-md-2 col-6 mb-2">
+                            <strong>Potassium:</strong> {{ results.sensor_data.potassium }} mg/kg
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-line text-primary me-2"></i>Price Prediction</h5>
+                <img src="data:image/png;base64,{{ price_plot }}" class="img-fluid" alt="Price Prediction Chart">
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-bar text-success me-2"></i>Demand Prediction</h5>
+                <img src="data:image/png;base64,{{ demand_plot }}" class="img-fluid" alt="Demand Prediction Chart">
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-pie text-info me-2"></i>Combined Trend</h5>
+                <img src="data:image/png;base64,{{ combined_plot }}" class="img-fluid" alt="Combined Trend Chart">
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Predictions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="table-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>Daily Predictions</h5>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" id="copyResults">
+                            <i class="far fa-copy"></i> Copy
+                        </button>
+                            <a href="{{ url_for('download_report') }}" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-file-pdf"></i> Download PDF Report
+                            </a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Price (LKR/kg)</th>
+                                <th>Demand (Tons)</th>
+                                <th>Price Change</th>
+                                <th>Demand Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(results.dates|length) %}
+                            <tr>
+                                <td><strong>{{ results.dates[i] }}</strong></td>
+                                <td>₨ {{ "%.2f"|format(results.prices[i]) }}</td>
+                                <td>{{ "%.0f"|format(results.demands[i]) }}</td>
+                                <td>
+                                    {% if i > 0 %}
+                                        {% set change = results.prices[i] - results.prices[i-1] %}
+                                        {% if change > 0 %}
+                                            <span class="text-success">↑ {{ "+%.2f"|format(change) }}</span>
+                                        {% elif change < 0 %}
+                                            <span class="text-danger">↓ {{ "%.2f"|format(change) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">→ 0.00</span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if i > 0 %}
+                                        {% set change = results.demands[i] - results.demands[i-1] %}
+                                        {% if change > 0 %}
+                                            <span class="text-success">↑ {{ "+%.0f"|format(change) }}</span>
+                                        {% elif change < 0 %}
+                                            <span class="text-danger">↓ {{ "%.0f"|format(change) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">→ 0</span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('Prices_Demand_predict') }}" class="btn btn-outline-primary btn-lg me-2">
+                <i class="fas fa-arrow-left me-2"></i>New Prediction
+            </a>
+            <a href="{{ url_for('Prices_Demand_sensor_predict') }}" class="btn btn-outline-success btn-lg">
+                <i class="fas fa-microchip me-2"></i>Try Sensor-Based
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+</script>
+{% endblock %}

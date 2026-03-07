@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Paddy Disease Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Welcome Card -->
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-leaf me-2"></i>Paddy Disease Detection</h2>
+                <p class="mb-0">Upload an image of affected paddy leaves for AI-powered disease identification</p>
+            </div>
+
+            <!-- Model Status Card -->
+            {% if not model_loaded %}
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Model Not Loaded</strong><br>
+                Please ensure the following files are in the models folder:
+                <ul class="mt-2 mb-0">
+                    <li>paddy_disease_model.h5</li>
+                    <li>class_indices.json</li>
+                    <li>pest_solutions.json</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Upload Form Card -->
+            <div class="form-card">
+                <form method="POST" enctype="multipart/form-data" id="diseaseForm">
+                    <h5 class="mb-3"><i class="fas fa-camera text-primary me-2"></i>Upload Image</h5>
+                    
+                    <!-- Image Upload Area -->
+                    <div class="form-group mb-4">
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" name="file" id="fileInput" class="file-input" accept="image/*" {% if not model_loaded %}disabled{% endif %} required>
+                            <div class="upload-content" id="uploadContent">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <h5>Drag & Drop or Click to Upload</h5>
+                                <p class="text-muted">Supported formats: JPG, PNG, JPEG (Max 16MB)</p>
+                            </div>
+                            <div id="filePreview" class="file-preview" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="detectBtn" {% if not model_loaded %}disabled{% endif %}>
+                                <i class="fas fa-search me-2"></i>Detect Disease
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-area {
+    border: 3px dashed #ccc;
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-area:hover {
+    border-color: #2e7d32;
+    background: rgba(46, 125, 50, 0.05);
+}
+
+.upload-area.dragover {
+    border-color: #2e7d32;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.file-input:disabled {
+    cursor: not-allowed;
+}
+
+.upload-content {
+    transition: all 0.3s ease;
+    text-align: center;
+    width: 100%;
+    pointer-events: none;
+}
+
+.upload-icon {
+    font-size: 5rem;
+    color: #2e7d32;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.upload-content h5 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.upload-content p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0;
+}
+
+.file-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 15px;
+    overflow: hidden;
+    z-index: 5;
+}
+
+.file-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+}
+
+/* Loading state for button */
+.btn-primary.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .upload-area {
+        min-height: 250px;
+        padding: 1rem;
+    }
+    
+    .upload-icon {
+        font-size: 4rem;
+    }
+    
+    .upload-content h5 {
+        font-size: 1rem;
+    }
+    
+    .upload-content p {
+        font-size: 0.8rem;
+    }
+}
+</style>
+
+<script>
+// File upload preview and drag & drop
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const filePreview = document.getElementById('filePreview');
+const uploadContent = document.getElementById('uploadContent');
+const detectBtn = document.getElementById('detectBtn');
+
+// Only enable drag/drop if model is loaded
+{% if model_loaded %}
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop area
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight() {
+    uploadArea.classList.add('dragover');
+}
+
+function unhighlight() {
+    uploadArea.classList.remove('dragover');
+}
+
+// Handle dropped files
+uploadArea.addEventListener('drop', handleDrop, false);
+fileInput.addEventListener('change', handleFiles, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    fileInput.files = files;
+    handleFiles({ target: { files: files } });
+}
+
+function handleFiles(e) {
+    const files = e.target.files;
+    if (files.length > 0) {
+        const file = files[0];
+        
+        // Check file size
+        if (file.size > 16 * 1024 * 1024) {
+            alert('File size must be less than 16MB');
+            fileInput.value = '';
+            resetUploadArea();
+            return;
+        }
+        
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            fileInput.value = '';
+            resetUploadArea();
+            return;
+        }
+        
+        // Preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Hide upload content, show preview
+            uploadContent.style.display = 'none';
+            filePreview.style.display = 'flex';
+            filePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        }
+        reader.readAsDataURL(file);
+        
+        // Enable detect button
+        detectBtn.disabled = false;
+    }
+}
+
+function resetUploadArea() {
+    uploadContent.style.display = 'block';
+    filePreview.style.display = 'none';
+    filePreview.innerHTML = '';
+    detectBtn.disabled = {% if not model_loaded %}true{% else %}false{% endif %};
+}
+{% endif %}
+
+// Form submission loading state
+document.getElementById('diseaseForm').addEventListener('submit', function() {
+    detectBtn.classList.add('loading');
+    detectBtn.disabled = true;
+    detectBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+});
+
+// Reset form on page load
+window.addEventListener('load', function() {
+    resetUploadArea();
+});
+
+// Handle click on upload area to trigger file input
+uploadArea.addEventListener('click', function(e) {
+    // Don't trigger if clicking on preview or if model not loaded
+    if (e.target !== fileInput && !filePreview.contains(e.target) && {% if model_loaded %}true{% else %}false{% endif %}) {
+        fileInput.click();
+    }
+});
+
+// Prevent click on preview from triggering file input
+filePreview.addEventListener('click', function(e) {
+    e.stopPropagation();
+});
+</script>
+{% endblock %}

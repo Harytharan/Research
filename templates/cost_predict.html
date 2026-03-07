@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Standard Estimate - FarmCost Estimator{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-calculator me-2"></i>Standard Cost Estimation</h2>
+                <p class="mb-0">Enter farming parameters to estimate total production cost</p>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('cost_predict') }}" id="predictionForm">
+                    <!-- Location & Environmental Factors -->
+                    <h5 class="mb-3"><i class="fas fa-map-marker-alt text-primary me-2"></i>Location & Environment</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-map-pin"></i> Latitude</label>
+                                <input type="number" name="latitude" class="form-control" step="0.0001" value="7.35" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-map-pin"></i> Longitude</label>
+                                <input type="number" name="longitude" class="form-control" step="0.0001" value="81.65" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar"></i> Year</label>
+                                <input type="number" name="year" class="form-control" value="{{ current_year }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud-sun"></i> Season</label>
+                                <select name="season" class="form-select" required>
+                                    {% for season in seasons %}
+                                    <option value="{{ season }}" {% if season == 'Maha' %}selected{% endif %}>{{ season }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-mountain"></i> Soil Type</label>
+                                <select name="soil_type" class="form-select" required>
+                                    {% for soil in soil_types %}
+                                    <option value="{{ soil }}" {% if soil == 'Clay' %}selected{% endif %}>{{ soil }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-seedling"></i> Seed Type</label>
+                                <select name="seed_type" class="form-select" required>
+                                    {% for seed in seed_types %}
+                                    <option value="{{ seed }}" {% if seed == 'BG352' %}selected{% endif %}>{{ seed }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud-rain"></i> Rainfall (mm)</label>
+                                <input type="number" name="rainfall" class="form-control" step="0.1" value="2200" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
+                                <input type="number" name="temperature" class="form-control" step="0.1" value="30.5" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
+                                <input type="number" name="humidity" class="form-control" step="0.1" value="85" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Farm Details -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-tractor text-success me-2"></i>Farm Details</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-chart-area"></i> Area (acres)</label>
+                                <input type="number" name="area" class="form-control" step="0.1" value="2.5" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Breakdown -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-rupee-sign text-warning me-2"></i>Cost Breakdown (LKR)</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-seedling"></i> Seed Cost</label>
+                                <input type="number" name="seed_cost" class="form-control" step="100" value="8000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-flask"></i> Fertilizer Cost</label>
+                                <input type="number" name="fertilizer_cost" class="form-control" step="100" value="15000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-bug"></i> Pesticide Cost</label>
+                                <input type="number" name="pesticide_cost" class="form-control" step="100" value="4000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-users"></i> Labor Cost</label>
+                                <input type="number" name="labor_cost" class="form-control" step="100" value="25000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-water"></i> Water Cost</label>
+                                <input type="number" name="water_cost" class="form-control" step="100" value="5000" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label><i class="fas fa-cog"></i> Machinery Cost</label>
+                                <input type="number" name="machinery_cost" class="form-control" step="100" value="10000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-ellipsis-h"></i> Other Costs</label>
+                                <input type="number" name="other_costs" class="form-control" step="100" value="2000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-calculator me-2"></i>Estimate Total Cost
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

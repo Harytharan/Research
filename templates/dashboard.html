@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — PaddyPredict{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner fade-in">
+        <div class="welcome-left">
+            <h1 class="welcome-title">
+                <i class="fas fa-hand-sparkles"></i>
+                Welcome, {{ current_user.username }}!
+            </h1>
+            <p class="welcome-desc">Your intelligent agricultural assistant for paddy farming</p>
+        </div>
+        <div class="welcome-right">
+            <div class="datetime-card">
+                <div class="datetime-time" id="currentTime">--:--:--</div>
+                <div class="datetime-date" id="currentDate">--- -- --- ----</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access Cards -->
+    <div class="section-block">
+        <div class="section-heading">
+            <div>
+                <h3><i class="fas fa-bolt text-warning me-2"></i>Quick Access Modules</h3>
+                <p class="section-sub">Select a module to start your analysis</p>
+            </div>
+        </div>
+        <div class="row g-4">
+            <!-- Farming Cost -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="qc-card qc-cost">
+                    <div class="qc-icon"><i class="fas fa-coins"></i></div>
+                    <h5 class="qc-title">Farming Cost Estimator</h5>
+                    <p class="qc-desc">Calculate total production costs and optimize farm expenses using AI prediction.</p>
+                    <a href="{{ url_for('cost_predict') }}" class="qc-btn">
+                        <span>Open Module</span> <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <!-- Fertilizer -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="qc-card qc-fert">
+                    <div class="qc-icon"><i class="fas fa-flask"></i></div>
+                    <h5 class="qc-title">Fertilizer Advisor</h5>
+                    <p class="qc-desc">Get AI-recommended fertilizers with predicted yield and application quantities.</p>
+                    <a href="{{ url_for('Intelligent_Fertilizer_predict') }}" class="qc-btn">
+                        <span>Open Module</span> <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <!-- Pest Detection -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="qc-card qc-pest">
+                    <div class="qc-icon"><i class="fas fa-bug"></i></div>
+                    <h5 class="qc-title">Pest Detection</h5>
+                    <p class="qc-desc">Identify pests via sensor readings or leaf image upload with CNN deep learning.</p>
+                    <a href="{{ url_for('pest_index') }}" class="qc-btn">
+                        <span>Open Module</span> <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <!-- Price & Demand -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="qc-card qc-price">
+                    <div class="qc-icon"><i class="fas fa-chart-line"></i></div>
+                    <h5 class="qc-title">Price & Demand Forecast</h5>
+                    <p class="qc-desc">Forecast paddy market prices and regional demand using LSTM & XGBoost models.</p>
+                    <a href="{{ url_for('Prices_Demand_predict') }}" class="qc-btn">
+                        <span>Open Module</span> <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row g-4 mt-1">
+        <div class="col-lg-6">
+            <div class="section-block">
+                <div class="section-heading">
+                    <h3><i class="fas fa-heartbeat text-danger me-2"></i>System Status</h3>
+                </div>
+                <div class="status-list">
+                    <div class="status-row">
+                        <div class="status-info">
+                            <i class="fas fa-database" style="color:#6366f1"></i>
+                            <span>Database Connection</span>
+                        </div>
+                        <span class="status-badge status-ok"><i class="fas fa-check-circle me-1"></i>Healthy</span>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-info">
+                            <i class="fas fa-brain" style="color:#22c55e"></i>
+                            <span>ML Models</span>
+                        </div>
+                        <span class="status-badge status-ok"><i class="fas fa-check-circle me-1"></i>Active</span>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-info">
+                            <i class="fas fa-cloud" style="color:#f59e0b"></i>
+                            <span>API Services</span>
+                        </div>
+                        <span class="status-badge status-ok"><i class="fas fa-check-circle me-1"></i>Operational</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="section-block">
+                <div class="section-heading">
+                    <h3><i class="fas fa-info-circle text-primary me-2"></i>Platform Info</h3>
+                </div>
+                <div class="status-list">
+                    <div class="status-row">
+                        <div class="status-info">
+                            <i class="fas fa-code-branch" style="color:#8b5cf6"></i>
+                            <span>Application Version</span>
+                        </div>
+                        <span class="status-badge" style="background:rgba(139,92,246,.1);color:#7c3aed;">v2.0.0</span>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-info">
+                            <i class="fas fa-microchip" style="color:#0ea5e9"></i>
+                            <span>ML Modules Loaded</span>
+                        </div>
+                        <span class="status-badge" style="background:rgba(14,165,233,.1);color:#0284c7;">4 / 4</span>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-info">
+                            <i class="fas fa-user-shield" style="color:#16a34a"></i>
+                            <span>Account Status</span>
+                        </div>
+                        <span class="status-badge status-ok"><i class="fas fa-check-circle me-1"></i>Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateDateTime() {
+        const now = new Date();
+        document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+</script>
+{% endblock %}

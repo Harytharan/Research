@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor Input - Fertilizer Recommendation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Input</h2>
+                <p class="mb-0">Use sensor data for accurate fertilizer recommendations</p>
+            </div>
+
+            <div class="form-card">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Sensor Mode:</strong> Values can be entered manually or read from connected sensors
+                </div>
+
+                <form method="POST" action="{{ url_for('Intelligent_Fertilizer_sensor_predict') }}" id="sensorForm">
+                    <h5 class="mb-3"><i class="fas fa-temperature-high text-primary me-2"></i>Soil Sensors</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Soil Temperature (°C)</label>
+                                <div class="input-group">
+                                    <input type="number" name="soil_temp" id="soil_temp" 
+                                           class="form-control" step="0.1"   required readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('soil_temp')">
+                                        <i class="fas fa-sync"></i> Read
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Soil Moisture (%)</label>
+                                <div class="input-group">
+                                    <input type="number" name="soil_moisture" id="soil_moisture" 
+                                           class="form-control" step="0.1"  required readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('soil_moisture')">
+                                        <i class="fas fa-sync"></i> Read
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-cloud-sun text-info me-2"></i>Environmental Sensors</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Air Temperature (°C)</label>
+                                <div class="input-group">
+                                    <input type="number" name="air_temp" id="air_temp" 
+                                           class="form-control" step="0.1"  required readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('air_temp')">
+                                        <i class="fas fa-sync"></i> Read
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Air Humidity (%)</label>
+                                <div class="input-group">
+                                    <input type="number" name="air_humidity" id="air_humidity" 
+                                           class="form-control" step="0.1"  required readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('air_humidity')">
+                                        <i class="fas fa-sync"></i> Read
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-seedling text-success me-2"></i>Crop Information</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-leaf"></i> Growth Stage</label>
+                                <select name="growth_stage" class="form-select" required>
+                                    <option value="">Select Growth Stage</option>
+                                    {% for stage in growth_stages %}
+                                    <option value="{{ stage }}">{{ stage }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-bullseye"></i> Purpose</label>
+                                <select name="purpose" class="form-select" required>
+                                    <option value="">Select Purpose</option>
+                                    {% for purpose in purposes %}
+                                    <option value="{{ purpose }}">{{ purpose }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="sensorWarnings" class="mb-3"></div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-microchip me-2"></i>Get Recommendations
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+
+<script>
+function readSensor(sensor) {
+    // Simulate sensor readings
+    let value;
+    switch(sensor) {
+        case 'soil_temp':
+            value = (20 + Math.random() * 15).toFixed(1);
+            break;
+        case 'soil_moisture':
+            value = (40 + Math.random() * 40).toFixed(1);
+            break;
+        case 'air_temp':
+            value = (25 + Math.random() * 10).toFixed(1);
+            break;
+        case 'air_humidity':
+            value = (60 + Math.random() * 30).toFixed(1);
+            break;
+    }
+    document.getElementById(sensor).value = value;
+    showToast(`${sensor} reading: ${value}`, 'info');
+}
+
+function showToast(message, type) {
+    // Simple alert for demo
+    alert(message);
+}
+
+// Validate sensor values
+function validateInputs() {
+    const soilTemp = parseFloat(document.getElementById('soil_temp').value) || 0;
+    const soilMoisture = parseFloat(document.getElementById('soil_moisture').value) || 0;
+    
+    let warnings = [];
+    
+    if (soilTemp < 10 || soilTemp > 45) {
+        warnings.push('Soil temperature outside typical range (10-45°C)');
+    }
+    if (soilMoisture < 20 || soilMoisture > 90) {
+        warnings.push('Soil moisture outside typical range (20-90%)');
+    }
+    
+    const warningDiv = document.getElementById('sensorWarnings');
+    if (warnings.length > 0) {
+        warningDiv.innerHTML = warnings.map(w => 
+            `<div class="alert alert-warning py-2"><i class="fas fa-exclamation-triangle me-2"></i>${w}</div>`
+        ).join('');
+    } else {
+        warningDiv.innerHTML = '';
+    }
+}
+
+// Add input listeners
+document.getElementById('soil_temp').addEventListener('input', validateInputs);
+document.getElementById('soil_moisture').addEventListener('input', validateInputs);
+</script>
+{% endblock %}

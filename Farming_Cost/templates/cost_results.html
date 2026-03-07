@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Estimation Results - FarmCost Estimator{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <h2><i class="fas fa-chart-pie me-2"></i>Cost Estimation Results</h2>
+                <p class="mb-0">Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>LKR {{ "%.0f"|format(results.predicted_cost) }}</h3>
+                    <p>Predicted Total Cost</p>
+                    <small>Including all factors</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>LKR {{ "%.0f"|format(results.total_input) }}</h3>
+                    <p>Input Total</p>
+                    <small>Sum of all costs entered</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="stat-card {% if results.difference > 0 %}warning{% else %}success{% endif %}">
+                <div class="stat-icon">
+                    <i class="fas fa-arrows-alt-h"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "%+.0f"|format(results.difference) }}</h3>
+                    <p>Difference</p>
+                    <small>Model adjustment</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if results.sensor_used %}
+    <!-- Sensor Data Used -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-microchip me-2 text-success"></i>Sensor Data Used</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Latitude:</strong> {{ results.input_data.Latitude }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Longitude:</strong> {{ results.input_data.Longitude }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Temperature:</strong> {{ results.input_data.Temperature_C }}°C
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Humidity:</strong> {{ results.input_data["Humidity_%"] }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-pie text-primary me-2"></i>Cost Breakdown</h5>
+                <img src="data:image/png;base64,{{ cost_breakdown_plot }}" class="img-fluid" alt="Cost Breakdown Chart">
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-bar text-success me-2"></i>Input vs Predicted</h5>
+                <img src="data:image/png;base64,{{ comparison_plot }}" class="img-fluid" alt="Comparison Chart">
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Results Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="table-card">
+                <h5 class="mb-3"><i class="fas fa-table me-2"></i>Cost Breakdown Details</h5>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Cost Category</th>
+                                <th>Amount (LKR)</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category, amount in results.cost_breakdown.items() %}
+                            <tr>
+                                <td>{{ category }}</td>
+                                <td>LKR {{ "%.0f"|format(amount) }}</td>
+                                <td>{{ "%.1f"|format(amount / results.total_input * 100) }}%</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="table-info">
+                                <td><strong>Input Total</strong></td>
+                                <td><strong>LKR {{ "%.0f"|format(results.total_input) }}</strong></td>
+                                <td><strong>100%</strong></td>
+                            </tr>
+                            <tr class="table-success">
+                                <td><strong>Predicted Total</strong></td>
+                                <td><strong>LKR {{ "%.0f"|format(results.predicted_cost) }}</strong></td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Parameters -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Input Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">Location:</small>
+                            <p>{{ results.input_data.Latitude }}, {{ results.input_data.Longitude }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Year:</small>
+                            <p>{{ results.input_data.Year }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Season:</small>
+                            <p>{{ results.input_data.Season }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Soil Type:</small>
+                            <p>{{ results.input_data.Soil_Type }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Seed Type:</small>
+                            <p>{{ results.input_data.Seed_Type }}</p>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-2">
+                            <small class="text-muted">Area:</small>
+                            <p>{{ results.input_data.Area_acres }} acres</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Rainfall:</small>
+                            <p>{{ results.input_data.Rainfall_mm }} mm</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Temperature:</small>
+                            <p>{{ results.input_data.Temperature_C }}°C</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Humidity:</small>
+                            <p>{{ results.input_data["Humidity_%"] }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('predict') }}" class="btn btn-outline-primary btn-lg me-2">
+                <i class="fas fa-arrow-left me-2"></i>New Estimate
+            </a>
+            <a href="{{ url_for('sensor_predict') }}" class="btn btn-outline-success btn-lg">
+                <i class="fas fa-microchip me-2"></i>Try Sensor-Based
+            </a>
+            <button class="btn btn-outline-info btn-lg" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Print Results
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

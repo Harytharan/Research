@@ -1,0 +1,79 @@
+#include "DHT.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+
+// DHT11 CONFIG
+#define DHTPIN 4        
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+
+// DS18B20 CONFIG
+#define ONE_WIRE_BUS 5  
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+
+// SOIL MOISTURE CONFIG
+
+const int soilPin = 34;  
+
+
+// SETUP
+
+void setup() {
+  Serial.begin(115200);
+
+  // Start sensors
+  Serial.println("Initializing Sensors...");
+  dht.begin();
+  sensors.begin();
+}
+
+
+// LOOP
+void loop() {
+
+  // DHT11 READ
+  float humidity = dht.readHumidity();
+  float tempDHT = dht.readTemperature();  
+
+  if (isnan(humidity) || isnan(tempDHT)) {
+    Serial.println("Error: Failed to read from DHT11 sensor!");
+  }
+
+  //  DS18B20 READ 
+  sensors.requestTemperatures();
+  float tempDS = sensors.getTempCByIndex(0);
+
+  if (tempDS == DEVICE_DISCONNECTED_C) {
+    Serial.println("Error: DS18B20 not detected!");
+  }
+
+  // SOIL SENSOR READ 
+  int soilValue = analogRead(soilPin);
+
+
+  // PRINT 
+  Serial.println("===== SENSOR READINGS =====");
+
+  Serial.print("DHT11 Temperature: ");
+  Serial.print(tempDHT);
+  Serial.println(" °C");
+
+  Serial.print("DHT11 Humidity: ");
+  Serial.print(humidity);
+  Serial.println(" %");
+
+  Serial.print("DS18B20 Temperature: ");
+  Serial.print(tempDS);
+  Serial.println(" °C");
+
+  Serial.print("Soil Moisture Value: ");
+  Serial.println(soilValue);
+
+  Serial.println("============================\n");
+
+  delay(1000);
+}

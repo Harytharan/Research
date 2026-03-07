@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Fertilizer Recommendation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <h1 class="display-6">
+                    <i class="fas fa-flask text-success me-2"></i>
+                    Welcome to Intelligent Fertilizer Recommendation
+                </h1>
+                <p class="lead">Get personalized fertilizer recommendations based on soil and environmental conditions</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-temperature-high"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>25-35°C</h3>
+                    <p>Optimal Soil Temp</p>
+                    <small>For most crops</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>60-80%</h3>
+                    <p>Optimal Moisture</p>
+                    <small>Soil moisture range</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>4 Stages</h3>
+                    <p>Growth Stages</p>
+                    <small>Seedling to Maturity</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Top 3</h3>
+                    <p>Recommendations</p>
+                    <small>With confidence scores</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('Intelligent_Fertilizer_predict') }}" class="quick-action-card">
+                                <i class="fas fa-keyboard fa-3x mb-3 text-primary"></i>
+                                <h5>Manual Input</h5>
+                                <p class="text-muted">Enter field parameters manually</p>
+                                <span class="btn btn-outline-primary btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('Intelligent_Fertilizer_sensor_predict') }}" class="quick-action-card">
+                                <i class="fas fa-microchip fa-3x mb-3 text-success"></i>
+                                <h5>Sensor Input</h5>
+                                <p class="text-muted">Use sensor data for recommendations</p>
+                                <span class="btn btn-outline-success btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-robot fa-3x text-primary mb-3"></i>
+                    <h5>AI-Powered</h5>
+                    <p>Random Forest models trained on agricultural data for accurate recommendations</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-leaf fa-3x text-success mb-3"></i>
+                    <h5>Sustainable</h5>
+                    <p>Environmentally conscious recommendations with sustainability notes</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                    <h5>Yield Prediction</h5>
+                    <p>Estimated yield for each fertilizer option</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

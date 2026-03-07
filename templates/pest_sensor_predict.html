@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor Detection - Pest Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Pest Detection</h2>
+                <p class="mb-0">Detect paddy pests using environmental sensor data</p>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('pest_sensor_predict') }}" id="sensorForm">
+                    <h5 class="mb-3"><i class="fas fa-microchip text-primary me-2"></i>Environmental Sensors</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
+                                <div class="input-group">
+                                    <input type="number" name="temperature" id="temperature" 
+                                           class="form-control" step="0.1" readonly required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('temperature')">
+                                        <i class="fas fa-sync"></i> Simulate
+                                    </button>
+                                </div>
+                                <small class="text-muted">Range: 20-40°C</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
+                                <div class="input-group">
+                                    <input type="number" name="humidity" id="humidity" 
+                                           class="form-control" step="0.1" readonly required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('humidity')">
+                                        <i class="fas fa-sync"></i> Simulate
+                                    </button>
+                                </div>
+                                <small class="text-muted">Range: 60-100%</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-gauge-high"></i> Pressure (hPa)</label>
+                                <div class="input-group">
+                                    <input type="number" name="pressure" id="pressure" 
+                                           class="form-control" step="0.1" readonly required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('pressure')">
+                                        <i class="fas fa-sync"></i> Simulate
+                                    </button>
+                                </div>
+                                <small class="text-muted">Range: 980-1030 hPa</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-sun"></i> Light Intensity (lux)</label>
+                                <div class="input-group">
+                                    <input type="number" name="light" id="light" 
+                                           class="form-control" step="100" readonly required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('light')">
+                                        <i class="fas fa-sync"></i> Simulate
+                                    </button>
+                                </div>
+                                <small class="text-muted">Range: 0-100000 lux</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar"></i> Day of Year</label>
+                                <input type="number" name="dayofyear" class="form-control" 
+                                       min="1" max="365" value="{{ current_day }}" required>
+                                <small class="text-muted">Current day: {{ current_day }}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="sensorWarnings" class="mb-3"></div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-search me-2"></i>Detect Pest
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sensor Tips -->
+          
+            <!-- Batch Upload -->
+            
+        </div>
+    </div>
+</div>
+
+<script>
+function simulateSensor(sensor) {
+    let value;
+    switch(sensor) {
+        case 'temperature':
+            value = (20 + Math.random() * 20).toFixed(1);
+            break;
+        case 'humidity':
+            value = (60 + Math.random() * 40).toFixed(1);
+            break;
+        case 'pressure':
+            value = (980 + Math.random() * 50).toFixed(1);
+            break;
+        case 'light':
+            value = Math.floor(10000 + Math.random() * 90000);
+            break;
+    }
+    document.getElementById(sensor).value = value;
+    showToast(`${sensor} reading simulated: ${value}`, 'info');
+}
+
+function uploadBatch() {
+    const file = document.getElementById('batchFile').files[0];
+    if (!file) {
+        showToast('Please select a file', 'warning');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    showLoading();
+    
+    fetch('/batch-predict', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            let html = '<div class="alert alert-success"><h6>Batch Results:</h6><ul>';
+            data.results.forEach(r => {
+                html += `<li>Row ${r.row_index}: ${r.predicted_pest} (${(r.probability*100).toFixed(1)}%)</li>`;
+            });
+            html += '</ul></div>';
+            document.getElementById('batchResults').innerHTML = html;
+            document.getElementById('batchResults').style.display = 'block';
+        } else {
+            showToast('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Error uploading file', 'danger');
+    });
+}
+</script>
+{% endblock %}

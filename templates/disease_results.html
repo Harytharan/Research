@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Disease Detection Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Results Header -->
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-clipboard-check me-2"></i>Analysis Complete</h2>
+                <p class="mb-0">AI-powered disease detection results</p>
+            </div>
+
+            <!-- Results Card -->
+            <div class="form-card">
+                <!-- Image Preview -->
+                {% if uploaded_image %}
+                <div class="text-center mb-4">
+                    <div class="result-image-container">
+                        <img src="data:image/png;base64,{{ uploaded_image }}" alt="Uploaded Image" class="img-fluid rounded">
+                        <span class="image-badge">{{ filename }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Disease Information -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="result-card disease">
+                            <i class="fas fa-disease"></i>
+                            <h6>Detected Disease</h6>
+                            <h4 class="text-primary">{{ result.disease }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-card pest">
+                            <i class="fas fa-bug"></i>
+                            <h6>Associated Pest</h6>
+                            <h4 class="text-danger">{{ result.pest }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confidence Meter -->
+                {% if result.confidence %}
+                <div class="info-card mb-4">
+                    <h6 class="mb-3"><i class="fas fa-chart-line me-2 text-primary"></i>Confidence Score</h6>
+                    <div class="confidence-meter">
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar confidence-bar" 
+                                 style="width: {{ (result.confidence * 100)|round }}%; 
+                                        background-color: {% if result.confidence > 0.8 %}#2ecc71{% elif result.confidence > 0.6 %}#f39c12{% else %}#e74c3c{% endif %};">
+                                {{ (result.confidence * 100)|round(1) }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Confidence Plot -->
+                {% if confidence_plot %}
+                <div class="chart-container mb-4">
+                    <img src="data:image/png;base64,{{ confidence_plot }}" alt="Confidence Plot" class="img-fluid">
+                </div>
+                {% endif %}
+
+                <!-- Crop Information -->
+                {% if result.growth_stage or result.severity %}
+                <div class="row mb-4">
+                    {% if result.growth_stage %}
+                    <div class="col-md-6">
+                        <div class="info-card text-center">
+                            <i class="fas fa-seedling text-success mb-2"></i>
+                            <h6>Growth Stage</h6>
+                            <p class="h5">{{ result.growth_stage }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if result.severity %}
+                    <div class="col-md-6">
+                        <div class="info-card text-center">
+                            <i class="fas fa-exclamation-triangle text-warning mb-2"></i>
+                            <h6>Severity Level</h6>
+                            <p class="h5">{{ result.severity }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Solution Card -->
+                <div class="solution-card mb-4">
+                    <h5 class="mb-3"><i class="fas fa-flask me-2 text-success"></i>Recommended Solution</h5>
+                    <div class="solution-text">
+                        {{ result.solution }}
+                    </div>
+                </div>
+
+                <!-- Additional Tips -->
+                <div class="info-card">
+                    <h5 class="mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i>Prevention Tips</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Use certified disease-free seeds</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Maintain proper field sanitation</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Practice crop rotation</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Monitor crop regularly for early signs</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Consult local agricultural extension for specific advice</li>
+                    </ul>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row mt-4">
+                    <div class="col-6">
+                        <a href="{{ url_for('disease_detection') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-arrow-left me-2"></i>New Analysis
+                        </a>
+                    </div>
+                     
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.result-image-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.result-image-container img {
+    max-height: 300px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.image-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 5px 15px;
+    border-radius: var(--radius-xl);
+    font-size: 0.8rem;
+}
+
+.result-card {
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    height: 100%;
+    transition: var(--transition-normal);
+}
+
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+
+.result-card.disease {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.2));
+    border-left: 4px solid #3498db;
+}
+
+.result-card.pest {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2));
+    border-left: 4px solid #e74c3c;
+}
+
+.result-card i {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.result-card.disease i { color: #3498db; }
+.result-card.pest i { color: #e74c3c; }
+
+.result-card h6 {
+    color: var(--gray-dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+.confidence-meter {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.confidence-bar {
+    line-height: 25px;
+    font-weight: 600;
+    text-align: center;
+    color: white;
+}
+
+.solution-card {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border-left: 4px solid var(--primary-green);
+}
+
+.solution-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--dark);
+    padding: var(--spacing-md);
+    background: white;
+    border-radius: var(--radius-md);
+}
+
+@media print {
+    .btn, .footer, #sidebar, .image-badge {
+        display: none !important;
+    }
+    
+    #content {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .result-card, .solution-card, .info-card {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ddd;
+    }
+}
+
+@media (max-width: 768px) {
+    .result-card {
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .result-image-container img {
+        max-height: 200px;
+    }
+}
+</style>
+{% endblock %}

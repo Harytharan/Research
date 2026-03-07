@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendations - Fertilizer Recommendation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <h2><i class="fas fa-flask me-2"></i>Fertilizer Recommendations</h2>
+                <p class="mb-0">Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% if sensor_used %}
+                <p class="mb-0 mt-2"><span class="badge bg-info">Sensor-Based Input</span></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if results %}
+    <!-- Top Recommendations -->
+    <div class="row mb-4">
+        {% for result in results %}
+        <div class="col-md-4 mb-4">
+            <div class="card recommendation-card rank-{{ result.rank }}">
+                <div class="card-header text-center 
+                    {% if result.rank == 1 %}bg-success text-white
+                    {% elif result.rank == 2 %}bg-info text-white
+                    {% else %}bg-secondary text-white{% endif %}">
+                    <h4 class="mb-0">Rank #{{ result.rank }}</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3">{{ result.fertilizer }}</h5>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Confidence:</span>
+                            <span class="fw-bold">{{ result.confidence }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar 
+                                {% if result.confidence > 80 %}bg-success
+                                {% elif result.confidence > 60 %}bg-info
+                                {% else %}bg-warning{% endif %}" 
+                                style="width: {{ result.confidence }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Quantity:</td>
+                            <td class="fw-bold">{{ result.quantity }} kg/acre</td>
+                        </tr>
+                        <tr>
+                            <td>Predicted Yield:</td>
+                            <td class="fw-bold">{{ result.yield }} ton/ha</td>
+                        </tr>
+                        <tr>
+                            <td>Est. Cost:</td>
+                            <td class="fw-bold">LKR {{ "{:,.0f}".format(result.cost) }}/ha</td>
+                        </tr>
+                    </table>
+                    
+                    <div class="sustainability-note mt-3 p-2 bg-light rounded">
+                        <small><i class="fas fa-leaf text-success me-1"></i> {{ result.sustainability_note }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-pie text-primary me-2"></i>Confidence Comparison</h5>
+                <img src="data:image/png;base64,{{ confidence_plot }}" class="img-fluid" alt="Confidence Chart">
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-bar text-success me-2"></i>Expected Yield</h5>
+                <img src="data:image/png;base64,{{ yield_comparison_plot }}" class="img-fluid" alt="Yield Chart">
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Input Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <small class="text-muted">Soil Temp:</small>
+                            <p>{{ input_data.soil_temp }}°C</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Soil Moisture:</small>
+                            <p>{{ input_data.soil_moisture }}%</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Air Temp:</small>
+                            <p>{{ input_data.air_temp }}°C</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Air Humidity:</small>
+                            <p>{{ input_data.air_humidity }}%</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Growth Stage:</small>
+                            <p>{{ input_data.growth_stage }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">Purpose:</small>
+                            <p>{{ input_data.purpose }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('Intelligent_Fertilizer_predict') }}" class="btn btn-outline-primary btn-lg me-2">
+                <i class="fas fa-keyboard me-2"></i>New Manual Input
+            </a>
+            <a href="{{ url_for('Intelligent_Fertilizer_sensor_predict') }}" class="btn btn-outline-success btn-lg">
+                <i class="fas fa-microchip me-2"></i>New Sensor Input
+            </a>
+            <button class="btn btn-outline-info btn-lg" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Print Results
+            </button>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-danger">
+        <h4>No recommendations available</h4>
+        <p>There was an error processing your request.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.recommendation-card {
+    border: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+    height: 100%;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+}
+
+.recommendation-card.rank-1 .card-header {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+.recommendation-card.rank-2 .card-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.recommendation-card.rank-3 .card-header {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+.sustainability-note {
+    border-left: 3px solid #2ecc71;
+}
+</style>
+{% endblock %}

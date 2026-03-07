@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaddyPredict — AI Powered Smart Paddy Farming</title>
+    <meta name="description" content="PaddyPredict is an AI-powered agriculture assistant for cost estimation, fertilizer recommendations, pest detection, and market price forecasting.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS VARIABLES ===== */
+        :root {
+            --green-50: #f0fdf4;
+            --green-100: #dcfce7;
+            --green-200: #bbf7d0;
+            --green-300: #86efac;
+            --green-400: #4ade80;
+            --green-500: #22c55e;
+            --green-600: #16a34a;
+            --green-700: #15803d;
+            --green-800: #166534;
+            --green-900: #14532d;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--slate-800);
+            background: #fff;
+            overflow-x: hidden;
+        }
+
+        /* ===== NAVBAR ===== */
+        .landing-nav {
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--slate-200);
+            transition: all .3s;
+        }
+        .landing-nav .container { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; max-width: 1200px; margin: auto; }
+        .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .nav-logo i { font-size: 1.8rem; color: var(--green-600); }
+        .nav-logo span { font-weight: 800; font-size: 1.4rem; color: var(--slate-900); }
+        .nav-links { display: flex; gap: 32px; align-items: center; }
+        .nav-links a { text-decoration: none; color: var(--slate-600); font-weight: 500; font-size: .95rem; transition: color .2s; }
+        .nav-links a:hover { color: var(--green-600); }
+        .nav-actions { display: flex; gap: 12px; align-items: center; }
+        .btn-nav-login { background: transparent; border: 1.5px solid var(--slate-300); color: var(--slate-700); padding: 9px 22px; border-radius: 10px; font-weight: 600; font-size: .9rem; text-decoration: none; transition: all .2s; }
+        .btn-nav-login:hover { border-color: var(--green-600); color: var(--green-600); }
+        .btn-nav-start { background: var(--green-600); border: none; color: #fff; padding: 10px 24px; border-radius: 10px; font-weight: 600; font-size: .9rem; text-decoration: none; transition: all .2s; box-shadow: 0 2px 8px rgba(22,163,74,.25); }
+        .btn-nav-start:hover { background: var(--green-700); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(22,163,74,.35); }
+        .nav-hamburger { display: none; background: none; border: none; font-size: 1.5rem; color: var(--slate-700); cursor: pointer; }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            background: linear-gradient(135deg, var(--green-50) 0%, #fff 40%, var(--slate-50) 100%);
+            overflow: hidden;
+            padding-top: 80px;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: -50%; right: -20%;
+            width: 800px; height: 800px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(34,197,94,.08) 0%, transparent 70%);
+        }
+        .hero::after {
+            content: '';
+            position: absolute; bottom: -30%; left: -10%;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(22,163,74,.06) 0%, transparent 70%);
+        }
+        .hero .container { position: relative; z-index: 2; max-width: 1200px; margin: auto; padding: 0 20px; }
+        .hero-content { max-width: 640px; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--green-100); color: var(--green-700);
+            padding: 6px 16px; border-radius: 50px; font-size: .85rem; font-weight: 600;
+            margin-bottom: 24px;
+        }
+        .hero-badge i { font-size: .7rem; }
+        .hero h1 { font-size: 3.5rem; font-weight: 900; line-height: 1.1; color: var(--slate-900); margin-bottom: 8px; }
+        .hero h1 .text-gradient {
+            background: linear-gradient(135deg, var(--green-600), var(--green-400));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero .tagline { font-size: 1.25rem; color: var(--green-700); font-weight: 600; margin-bottom: 16px; }
+        .hero .description { font-size: 1.1rem; color: var(--slate-500); line-height: 1.7; margin-bottom: 36px; }
+        .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+        .btn-hero-primary {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--green-600); color: #fff; padding: 14px 32px; border-radius: 12px;
+            font-weight: 700; font-size: 1rem; text-decoration: none;
+            box-shadow: 0 4px 16px rgba(22,163,74,.3);
+            transition: all .25s;
+        }
+        .btn-hero-primary:hover { background: var(--green-700); color: #fff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,.4); }
+        .btn-hero-secondary {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: #fff; color: var(--slate-700); padding: 14px 32px; border-radius: 12px;
+            font-weight: 700; font-size: 1rem; text-decoration: none;
+            border: 1.5px solid var(--slate-200);
+            transition: all .25s;
+        }
+        .btn-hero-secondary:hover { border-color: var(--green-500); color: var(--green-600); transform: translateY(-2px); }
+        .hero-stats { display: flex; gap: 40px; margin-top: 48px; }
+        .hero-stat { text-align: left; }
+        .hero-stat .num { font-size: 1.6rem; font-weight: 800; color: var(--green-600); }
+        .hero-stat .label { font-size: .85rem; color: var(--slate-500); font-weight: 500; }
+
+        /* ===== ABOUT ===== */
+        .about { padding: 100px 0; background: #fff; }
+        .about .container { max-width: 1200px; margin: auto; padding: 0 20px; }
+        .section-label { display: inline-flex; align-items: center; gap: 8px; color: var(--green-600); font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+        .section-title { font-size: 2.4rem; font-weight: 800; color: var(--slate-900); margin-bottom: 16px; line-height: 1.2; }
+        .section-desc { font-size: 1.05rem; color: var(--slate-500); max-width: 600px; line-height: 1.7; margin-bottom: 48px; }
+        .about-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 24px; }
+        .about-item {
+            display: flex; gap: 16px; padding: 24px; border-radius: 16px;
+            background: var(--slate-50); border: 1px solid var(--slate-100);
+            transition: all .25s;
+        }
+        .about-item:hover { background: var(--green-50); border-color: var(--green-200); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+        .about-icon {
+            width: 48px; height: 48px; min-width: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: #fff;
+        }
+        .about-icon.cost { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .about-icon.fert { background: linear-gradient(135deg, #0891b2, #06b6d4); }
+        .about-icon.pest { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .about-icon.price { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+        .about-text h5 { font-weight: 700; color: var(--slate-800); margin-bottom: 4px; font-size: 1rem; }
+        .about-text p { color: var(--slate-500); font-size: .9rem; line-height: 1.6; margin: 0; }
+
+        /* ===== FEATURES ===== */
+        .features { padding: 100px 0; background: var(--slate-50); }
+        .features .container { max-width: 1200px; margin: auto; padding: 0 20px; text-align: center; }
+        .features .section-desc { margin: 0 auto 56px; }
+        .features-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; }
+        .feature-card {
+            background: #fff; border-radius: 20px; padding: 36px 28px;
+            text-align: center; border: 1px solid var(--slate-100);
+            transition: all .3s; position: relative; overflow: hidden;
+        }
+        .feature-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--green-400), var(--green-600));
+            opacity: 0; transition: opacity .3s;
+        }
+        .feature-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0,0,0,.08); }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-icon {
+            width: 68px; height: 68px; border-radius: 18px; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; color: #fff;
+        }
+        .feature-icon.fc1 { background: linear-gradient(135deg, #16a34a, #4ade80); }
+        .feature-icon.fc2 { background: linear-gradient(135deg, #0891b2, #22d3ee); }
+        .feature-icon.fc3 { background: linear-gradient(135deg, #d97706, #fbbf24); }
+        .feature-icon.fc4 { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+        .feature-card h5 { font-weight: 700; font-size: 1.05rem; color: var(--slate-800); margin-bottom: 8px; }
+        .feature-card p { color: var(--slate-500); font-size: .9rem; line-height: 1.6; margin: 0; }
+        .feature-badge { display: inline-block; margin-top: 16px; font-size: .75rem; font-weight: 600; padding: 4px 12px; border-radius: 50px; }
+        .feature-badge.rf { background: var(--green-100); color: var(--green-700); }
+        .feature-badge.cnn { background: #fef3c7; color: #92400e; }
+        .feature-badge.lstm { background: #ede9fe; color: #5b21b6; }
+        .feature-badge.xgb { background: #e0f2fe; color: #075985; }
+
+        /* ===== HOW IT WORKS ===== */
+        .hiw { padding: 100px 0; background: #fff; }
+        .hiw .container { max-width: 1200px; margin: auto; padding: 0 20px; text-align: center; }
+        .hiw .section-desc { margin: 0 auto 56px; }
+        .hiw-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 32px; position: relative; }
+        .hiw-grid::before {
+            content: ''; position: absolute; top: 48px; left: 15%; right: 15%; height: 2px;
+            background: linear-gradient(90deg, var(--green-200), var(--green-400), var(--green-200));
+            z-index: 0;
+        }
+        .hiw-step { position: relative; z-index: 1; }
+        .hiw-num {
+            width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: 800; color: #fff;
+            background: linear-gradient(135deg, var(--green-500), var(--green-600));
+            box-shadow: 0 4px 16px rgba(22,163,74,.3);
+        }
+        .hiw-icon { font-size: 2rem; color: var(--green-600); margin-bottom: 12px; }
+        .hiw-step h5 { font-weight: 700; font-size: 1rem; color: var(--slate-800); margin-bottom: 6px; }
+        .hiw-step p { color: var(--slate-500); font-size: .88rem; line-height: 1.6; }
+
+        /* ===== CTA ===== */
+        .cta {
+            padding: 100px 0;
+            background: linear-gradient(135deg, var(--green-700), var(--green-500));
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta::before { content: ''; position: absolute; top: -50%; right: -20%; width: 600px; height: 600px; border-radius: 50%; background: rgba(255,255,255,.05); }
+        .cta::after { content: ''; position: absolute; bottom: -40%; left: -15%; width: 500px; height: 500px; border-radius: 50%; background: rgba(255,255,255,.04); }
+        .cta .container { position: relative; z-index: 2; max-width: 700px; margin: auto; padding: 0 20px; }
+        .cta h2 { font-size: 2.4rem; font-weight: 800; color: #fff; margin-bottom: 16px; }
+        .cta p { color: rgba(255,255,255,.85); font-size: 1.1rem; line-height: 1.7; margin-bottom: 36px; }
+        .btn-cta {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: #fff; color: var(--green-700); padding: 16px 36px; border-radius: 14px;
+            font-weight: 700; font-size: 1.05rem; text-decoration: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,.15);
+            transition: all .25s;
+        }
+        .btn-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,.2); color: var(--green-800); }
+
+        /* ===== FOOTER ===== */
+        .landing-footer {
+            background: var(--slate-900);
+            padding: 48px 0 24px;
+            text-align: center;
+        }
+        .landing-footer .container { max-width: 1200px; margin: auto; padding: 0 20px; }
+        .footer-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .footer-logo i { font-size: 1.6rem; color: var(--green-400); }
+        .footer-logo span { font-weight: 800; font-size: 1.3rem; color: #fff; }
+        .footer-text { color: var(--slate-400); font-size: .9rem; margin-bottom: 8px; }
+        .footer-bottom { border-top: 1px solid var(--slate-700); margin-top: 32px; padding-top: 20px; }
+        .footer-bottom p { color: var(--slate-500); font-size: .82rem; margin: 0; }
+
+        /* ===== FLASH MESSAGES ===== */
+        .landing-flash {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; max-width: 480px; width: 90%;
+        }
+        .landing-flash .alert {
+            border-radius: 12px; border: none; padding: 14px 20px; font-size: .9rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,.12); animation: slideDown .4s ease;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:992px) {
+            .nav-links { display: none; }
+            .nav-hamburger { display: block; }
+            .hero h1 { font-size: 2.6rem; }
+            .features-grid { grid-template-columns: repeat(2,1fr); }
+            .hiw-grid { grid-template-columns: repeat(2,1fr); gap: 32px; }
+            .hiw-grid::before { display: none; }
+            .about-grid { grid-template-columns: 1fr; }
+        }
+        @media(max-width:576px) {
+            .hero h1 { font-size: 2rem; }
+            .hero-stats { gap: 24px; flex-wrap: wrap; }
+            .features-grid { grid-template-columns: 1fr; }
+            .hiw-grid { grid-template-columns: 1fr; }
+            .hero-buttons { flex-direction: column; }
+            .nav-actions { gap: 8px; }
+            .btn-nav-login, .btn-nav-start { padding: 8px 14px; font-size: .82rem; }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        .fade-up { opacity: 0; transform: translateY(30px); transition: all .6s ease; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="landing-nav">
+        <div class="container">
+            <a href="{{ url_for('landing') }}" class="nav-logo">
+                <i class="fas fa-seedling"></i>
+                <span>PaddyPredict</span>
+            </a>
+            <div class="nav-links">
+                <a href="#about">About</a>
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+            </div>
+            <div class="nav-actions">
+                <a href="{{ url_for('login') }}" class="btn-nav-login">Login</a>
+                <a href="{{ url_for('register') }}" class="btn-nav-start">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="landing-flash">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'info' %}info-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Hero -->
+    <section class="hero" id="hero">
+        <div class="container">
+            <div class="hero-content fade-up">
+                <div class="hero-badge">
+                    <i class="fas fa-circle"></i> AI-Powered Agriculture Platform
+                </div>
+                <h1>
+                    Smarter Farming with
+                    <span class="text-gradient">PaddyPredict</span>
+                </h1>
+                <p class="tagline">AI Powered Smart Paddy Farming Assistant</p>
+                <p class="description">
+                    Leverage machine learning to estimate costs, get fertilizer recommendations,
+                    detect pests, and forecast market prices — all from one intelligent dashboard.
+                </p>
+                <div class="hero-buttons">
+                    <a href="{{ url_for('register') }}" class="btn-hero-primary">
+                        <i class="fas fa-rocket"></i> Get Started Free
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn-hero-secondary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="num">4</div>
+                        <div class="label">AI Modules</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="num">5+</div>
+                        <div class="label">ML Models</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="num">100%</div>
+                        <div class="label">Free to Use</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About -->
+    <section class="about" id="about">
+        <div class="container">
+            <div class="section-label"><i class="fas fa-leaf"></i> About PaddyPredict</div>
+            <h2 class="section-title fade-up">What This System Does</h2>
+            <p class="section-desc fade-up">
+                PaddyPredict brings together multiple AI models to help paddy farmers make
+                data-driven decisions at every stage of the farming cycle.
+            </p>
+            <div class="about-grid">
+                <div class="about-item fade-up">
+                    <div class="about-icon cost"><i class="fas fa-coins"></i></div>
+                    <div class="about-text">
+                        <h5>Estimate Farming Costs</h5>
+                        <p>Calculate seed, fertilizer, pesticide, labor, water, and machinery costs with AI-powered prediction to plan your budget effectively.</p>
+                    </div>
+                </div>
+                <div class="about-item fade-up">
+                    <div class="about-icon fert"><i class="fas fa-flask"></i></div>
+                    <div class="about-text">
+                        <h5>Recommend Fertilizers</h5>
+                        <p>Get top-3 AI-recommended fertilizers optimized for your soil conditions, growth stage, and desired yield target.</p>
+                    </div>
+                </div>
+                <div class="about-item fade-up">
+                    <div class="about-icon pest"><i class="fas fa-bug"></i></div>
+                    <div class="about-text">
+                        <h5>Detect Pests & Diseases</h5>
+                        <p>Upload leaf images or use sensor data to identify paddy pests and diseases instantly with CNN-based deep learning models.</p>
+                    </div>
+                </div>
+                <div class="about-item fade-up">
+                    <div class="about-icon price"><i class="fas fa-chart-line"></i></div>
+                    <div class="about-text">
+                        <h5>Predict Prices & Demand</h5>
+                        <p>Forecast rice market prices and demand trends using LSTM and XGBoost models to time your sales perfectly.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-label"><i class="fas fa-star"></i> Core Modules</div>
+            <h2 class="section-title fade-up">Four Powerful AI Modules</h2>
+            <p class="section-desc fade-up">Each module is powered by state-of-the-art machine learning models trained on real agricultural data.</p>
+            <div class="features-grid">
+                <div class="feature-card fade-up">
+                    <div class="feature-icon fc1"><i class="fas fa-calculator"></i></div>
+                    <h5>Farming Cost Estimator</h5>
+                    <p>Accurately predict total paddy farming costs based on land size, inputs, and regional factors.</p>
+                    <span class="feature-badge rf">Random Forest</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon fc2"><i class="fas fa-flask"></i></div>
+                    <h5>Fertilizer Advisor</h5>
+                    <p>Get AI-recommended fertilizers with predicted yield and quantity for optimal crop growth.</p>
+                    <span class="feature-badge rf">Random Forest</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon fc3"><i class="fas fa-bug"></i></div>
+                    <h5>Pest Detection</h5>
+                    <p>Identify pests from sensor readings or leaf images using deep learning image classification.</p>
+                    <span class="feature-badge cnn">CNN</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon fc4"><i class="fas fa-chart-line"></i></div>
+                    <h5>Price & Demand Forecast</h5>
+                    <p>Predict future paddy prices and market demand trends with time-series forecasting.</p>
+                    <span class="feature-badge lstm">LSTM</span>
+                    <span class="feature-badge xgb">XGBoost</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="hiw" id="how-it-works">
+        <div class="container">
+            <div class="section-label"><i class="fas fa-cogs"></i> How It Works</div>
+            <h2 class="section-title fade-up">Get Started in 4 Simple Steps</h2>
+            <p class="section-desc fade-up">From sign-up to smarter farming decisions in minutes.</p>
+            <div class="hiw-grid">
+                <div class="hiw-step fade-up">
+                    <div class="hiw-num">1</div>
+                    <div class="hiw-icon"><i class="fas fa-user-plus"></i></div>
+                    <h5>Create Account</h5>
+                    <p>Sign up with your email and get instant access to all AI farming modules.</p>
+                </div>
+                <div class="hiw-step fade-up">
+                    <div class="hiw-num">2</div>
+                    <div class="hiw-icon"><i class="fas fa-sign-in-alt"></i></div>
+                    <h5>Login to System</h5>
+                    <p>Securely log in to your personalized agricultural intelligence dashboard.</p>
+                </div>
+                <div class="hiw-step fade-up">
+                    <div class="hiw-num">3</div>
+                    <div class="hiw-icon"><i class="fas fa-brain"></i></div>
+                    <h5>Use AI Tools</h5>
+                    <p>Access all four AI-powered modules for cost, fertilizer, pest, and price analysis.</p>
+                </div>
+                <div class="hiw-step fade-up">
+                    <div class="hiw-num">4</div>
+                    <div class="hiw-icon"><i class="fas fa-chart-bar"></i></div>
+                    <h5>Make Smart Decisions</h5>
+                    <p>Use AI insights to optimize your farming operations and maximize profits.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container fade-up">
+            <h2>Ready to Transform Your Farming?</h2>
+            <p>Join PaddyPredict today and start making data-driven agricultural decisions with the power of artificial intelligence.</p>
+            <a href="{{ url_for('register') }}" class="btn-cta">
+                <i class="fas fa-rocket"></i> Create Free Account
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div class="container">
+            <div class="footer-logo">
+                <i class="fas fa-seedling"></i>
+                <span>PaddyPredict</span>
+            </div>
+            <p class="footer-text">AI-Powered Smart Paddy Farming Assistant</p>
+            <p class="footer-text">Empowering farmers with intelligent agricultural technology</p>
+            <div class="footer-bottom">
+                <p>&copy; 2024 PaddyPredict &mdash; Version 2.0.0 &mdash; <i class="fas fa-heart" style="color: #ef4444;"></i> Smart Agriculture</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Scroll-triggered animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        // Auto-dismiss flash
+        setTimeout(() => {
+            document.querySelectorAll('.landing-flash .alert').forEach(a => {
+                a.style.transition = 'opacity .4s';
+                a.style.opacity = '0';
+                setTimeout(() => a.remove(), 400);
+            });
+        }, 4000);
+    </script>
+</body>
+</html>

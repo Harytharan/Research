@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Standard Prediction - Paddy Predictor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="welcome-card mb-4">
+                <h2><i class="fas fa-chart-line me-2"></i>Standard Price & Demand Prediction</h2>
+                <p class="mb-0">Predict future paddy prices and demand using historical data and machine learning</p>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" action="{{ url_for('Prices_Demand_predict') }}" id="predictionForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar-alt"></i>Start Date</label>
+                                <input type="date" name="start_date" class="form-control" 
+                                       min="{{ today }}" value="{{ tomorrow }}" required>
+                                <small class="text-muted">Select the first day of prediction</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-clock"></i>Number of Days</label>
+                                <select name="n_days" class="form-select" required>
+                                    <option value="7">7 Days (1 Week)</option>
+                                    <option value="14">14 Days (2 Weeks)</option>
+                                    <option value="21">21 Days (3 Weeks)</option>
+                                    <option value="30">30 Days (1 Month)</option>
+                                </select>
+                                <small class="text-muted">Select prediction horizon</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>How it works:</strong> The model will analyze historical patterns and trends to predict future prices and demand for the selected period.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-magic me-2"></i>Generate Predictions
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

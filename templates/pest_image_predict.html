@@ -2,222 +2,326 @@
 
 {% block title %}Image-Based Pest Detection{% endblock %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --pest-primary: #10b981;
+        --pest-primary-dark: #059669;
+        --pest-primary-light: #d1fae5;
+        --pest-secondary: #84cc16;
+        --pest-warning: #f59e0b;
+        --pest-danger: #ef4444;
+        --pest-dark: #1f2937;
+        --pest-bg: #f9fafb;
+        --pest-card-bg: #ffffff;
+        --pest-text: #374151;
+        --pest-text-light: #6b7280;
+        --pest-border: #e5e7eb;
+    }
+
+    body {
+        background-color: var(--pest-bg);
+        color: var(--pest-text);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--pest-dark), #374151);
+        color: white;
+        padding: 2.5rem 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(31, 41, 55, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; width: 100%; height: 100%;
+        background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA1IiBkPSJNMzkuOTgzIDE2YTE5Ljk5IDE5Ljk5IDAgMCAwLTE0LjEzNiA1Ljg1M0w1LjgwMiAzOS45MTVhMS45OSAxLjk5IDAgMCAwIDAgMi44MTdsMjAuMDQ1IDE4LjA2MkExOS45OSAxOS45OSAwIDAgMCAzOS45ODMgNjRhMTkuOTkgMTkuOTkgMCAwIDAgMTQuMTM2LTUuODUzTDU0LjExOSA1NC40NUEzOS45MDYgMzkuOTA2IDAgMCAxIDM5Ljk4MyA4MGMtMjIuMDkxIDAtNDAtMTcuOTA5LTQwLTQwcS4wMDItNS4zNjYgMS40NDUtMTAuNDk1TDIxLjE3MSAzOC4zMzNhMjAuMDMgMjAuMDMgMCAwIDAgMTguODEyIDIxLjY2N2ExOS45OSAxOS45OSAwIDAgMCAxNC4xMzYtNS44NTNWMTZ6Ii8+Cjwvc3ZnPg==') repeat;
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    .upload-card {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        padding: 2.5rem;
+        border: 1px solid var(--pest-border);
+    }
+
+    .upload-area {
+        border: 2px dashed rgba(16, 185, 129, 0.3);
+        border-radius: 1rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        background: var(--pest-bg);
+        transition: all 0.3s ease;
+        position: relative;
+        cursor: pointer;
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .upload-area:hover, .upload-area.dragover {
+        background: var(--pest-primary-light);
+        border-color: var(--pest-primary);
+        border-style: solid;
+    }
+
+    .upload-icon {
+        font-size: 4.5rem;
+        color: var(--pest-primary);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .upload-area:hover .upload-icon {
+        transform: translateY(-5px) scale(1.05);
+    }
+
+    .file-input {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 10;
+    }
+
+    .preview-container {
+        display: none;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0;
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        z-index: 5;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 200px;
+        object-fit: contain;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .btn-analyze {
+        background: linear-gradient(to right, var(--pest-primary-dark), var(--pest-primary));
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-analyze:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+
+    .btn-analyze:disabled {
+        background: #d1d5db;
+        box-shadow: none;
+        transform: none;
+        cursor: not-allowed;
+        color: #6b7280;
+    }
+
+    .loader-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.9);
+        z-index: 20;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1rem;
+    }
+
+    .spinner-border {
+        color: var(--pest-primary);
+        width: 3.5rem; height: 3.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--pest-dark);
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
         <div class="col-lg-8 mx-auto">
-            <!-- Welcome Card -->
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-camera me-2"></i>Image-Based Pest Detection</h2>
-                <p class="mb-0">Upload an image of the pest for AI-powered identification</p>
-            </div>
-
-            <!-- Upload Form Card -->
-            <div class="form-card">
-                <form method="POST" enctype="multipart/form-data" id="pestForm">
-                    <!-- Image Upload -->
-                    <div class="form-group mb-4">
-                        <label class="form-label">
-                            <i class="fas fa-image text-primary me-2"></i>Select Pest Image
-                        </label>
-                        <div class="upload-area" id="uploadArea">
-                            <input type="file" name="file" id="fileInput" class="file-input" accept="image/*" required>
-                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                            <h5>Drag & Drop or Click to Upload</h5>
-                            <p class="text-muted">Supported formats: JPG, PNG, JPEG, GIF (Max 16MB)</p>
-                            <div id="filePreview" class="file-preview"></div>
-                        </div>
-                    </div>
-
-                    <!-- Growth Stage Selection -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label><i class="fas fa-seedling text-success me-2"></i>Growth Stage</label>
-                                <select name="growth_stage" class="form-select" required>
-                                    <option value="">Select Growth Stage</option>
-                                    {% for stage in growth_stages %}
-                                    <option value="{{ stage }}">{{ stage }} Stage</option>
-                                    {% endfor %}
-                                </select>
-                                <small class="text-muted">Current growth stage of the crop</small>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                 
-                             <select name="severity" class="form-select" style="display:none;">
-    <option value="Mild" selected>Mild</option>
-</select>
-                                
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
-                                <i class="fas fa-search me-2"></i>Detect Pest
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Information Card -->
-            <div class="info-card mt-4">
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-robot fa-2x text-primary mb-2"></i>
-                        <h6>CNN Model</h6>
-                        <small class="text-muted">Deep Learning</small>
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
-                        <h6>High Accuracy</h6>
-                        <small class="text-muted">95%+ Detection</small>
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-clock fa-2x text-info mb-2"></i>
-                        <h6>Fast Results</h6>
-                        <small class="text-muted">Under 2 seconds</small>
-                    </div>
-                </div>
+            <div class="page-header">
+                <h2 class="display-6 fw-bold mb-2">
+                    <i class="fas fa-spider me-3"></i>Pest Detection
+                </h2>
+                <p class="lead mb-0 opacity-75">Upload a photo of the insect for instant AI identification.</p>
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="upload-card position-relative">
+                
+                <!-- Loading Overlay -->
+                <div class="loader-overlay" id="loaderOverlay">
+                    <div class="spinner-border mb-3" role="status"></div>
+                    <h5 class="fw-bold text-dark">Identifying Pest...</h5>
+                    <p class="text-muted small">Running inference via CNN Model.</p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" id="pestForm">
+                    
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <label class="form-label"><i class="fas fa-image text-primary me-2"></i>Pest Image</label>
+                            
+                            <div class="upload-area mb-2" id="uploadArea">
+                                <input type="file" name="file" id="fileInput" class="file-input" accept="image/*" required>
+                                
+                                <div id="uploadContent">
+                                    <i class="fas fa-camera upload-icon"></i>
+                                    <h5 class="fw-bold text-dark mb-1">Drag & Drop or Click to Browse</h5>
+                                    <p class="text-muted small mb-0">Supports JPG, PNG, JPEG (Max 16MB)</p>
+                                </div>
+
+                                <div class="preview-container" id="previewContainer">
+                                    <img src="" alt="Image Preview" class="preview-image" id="previewImage">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Growth Stage Removed -->
+                        
+                        <!-- Hidden Severity (Preserved from original logic) -->
+                        <select name="severity" style="display:none;"><option value="Mild" selected>Mild</option></select>
+                    </div>
+
+                    <button type="submit" class="btn btn-analyze w-100 fs-5" id="detectBtn" disabled>
+                        <i class="fas fa-search me-2"></i> Identify Pest
+                    </button>
+                </form>
+            </div>
+            
+        </div>
+    </div>
 </div>
+{% endblock %}
 
-<style>
-.upload-area {
-    border: 3px dashed var(--gray-light);
-    border-radius: var(--radius-lg);
-    padding: 3rem 2rem;
-    text-align: center;
-    background: var(--light);
-    cursor: pointer;
-    transition: var(--transition-normal);
-    position: relative;
-}
-
-.upload-area:hover {
-    border-color: var(--primary-green);
-    background: rgba(46, 125, 50, 0.05);
-}
-
-.upload-area.dragover {
-    border-color: var(--primary-green);
-    background: rgba(46, 125, 50, 0.1);
-}
-
-.file-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-}
-
-.upload-icon {
-    font-size: 4rem;
-    color: var(--primary-green);
-    margin-bottom: 1rem;
-}
-
-.file-preview {
-    margin-top: 1rem;
-    max-width: 200px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.file-preview img {
-    width: 100%;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-}
-</style>
-
+{% block extra_js %}
 <script>
-// File upload preview and drag & drop
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
-const filePreview = document.getElementById('filePreview');
-const submitBtn = document.getElementById('submitBtn');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadContent = document.getElementById('uploadContent');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewImage = document.getElementById('previewImage');
+    const detectBtn = document.getElementById('detectBtn');
+    const pestForm = document.getElementById('pestForm');
+    const loaderOverlay = document.getElementById('loaderOverlay');
 
-// Prevent default drag behaviors
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, preventDefaults, false);
-    document.body.addEventListener(eventName, preventDefaults, false);
-});
+    // Drag and drop visuals
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
 
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-// Highlight drop area
-['dragenter', 'dragover'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight() {
-    uploadArea.classList.add('dragover');
-}
-
-function unhighlight() {
-    uploadArea.classList.remove('dragover');
-}
-
-// Handle dropped files
-uploadArea.addEventListener('drop', handleDrop, false);
-fileInput.addEventListener('change', handleFiles, false);
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    fileInput.files = files;
-    handleFiles({ target: { files: files } });
-}
-
-function handleFiles(e) {
-    const files = e.target.files;
-    if (files.length > 0) {
-        const file = files[0];
-        
-        // Check file size
-        if (file.size > 16 * 1024 * 1024) {
-            alert('File size must be less than 16MB');
-            fileInput.value = '';
-            filePreview.innerHTML = '';
-            return;
-        }
-        
-        // Preview image
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            filePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-        }
-        reader.readAsDataURL(file);
-        
-        // Update upload area text
-        document.querySelector('.upload-area h5').textContent = file.name;
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
     }
-}
 
-// Form submission loading state
-document.getElementById('pestForm').addEventListener('submit', function() {
-    submitBtn.classList.add('loading');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-});
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
+    });
+
+    // Handle Drop
+    uploadArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        handleFiles(files);
+    }
+
+    // Handle File Input Change
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            
+            if (file.size > 16 * 1024 * 1024) {
+                alert('File size must be under 16MB.');
+                resetUpload();
+                return;
+            }
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Invalid file format. Please upload an image.');
+                resetUpload();
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadContent.style.display = 'none';
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'flex';
+                detectBtn.disabled = false;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function resetUpload() {
+        fileInput.value = '';
+        uploadContent.style.display = 'block';
+        previewContainer.style.display = 'none';
+        previewImage.src = '';
+        detectBtn.disabled = true;
+    }
+
+    // Form Submit Loader
+    pestForm.addEventListener('submit', function() {
+        if(fileInput.files.length > 0) {
+            loaderOverlay.style.display = 'flex';
+            detectBtn.disabled = true;
+        }
+    });
+
+    // Handle preview click to re-upload
+    previewContainer.addEventListener('click', function(e) {
+        previewContainer.style.pointerEvents = 'none';
+        setTimeout(() => previewContainer.style.pointerEvents = 'auto', 100);
+    });
 </script>
 {% endblock %}

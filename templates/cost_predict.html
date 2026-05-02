@@ -1,169 +1,405 @@
 {% extends "base.html" %}
+{% block title %}Standard Estimation — Farming Cost{% endblock %}
 
-{% block title %}Standard Estimate - FarmCost Estimator{% endblock %}
+{% block extra_css %}
+<style>
+  /* ============================================================
+   STANDARD ESTIMATION INPUT — PREMIUM GREEN FORM
+   ============================================================ */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px)
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0)
+    }
+  }
+
+  .au {
+    opacity: 0;
+    animation: fadeUp .55s ease forwards;
+  }
+
+  .d1 {
+    animation-delay: .1s
+  }
+
+  .d2 {
+    animation-delay: .2s
+  }
+
+  .d3 {
+    animation-delay: .3s
+  }
+
+  .d4 {
+    animation-delay: .4s
+  }
+
+  /* Hero */
+  .mp-hero {
+    background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+    border-radius: 22px;
+    padding: 40px 44px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(6, 78, 59, .3);
+  }
+
+  .mp-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 80% 50%, rgba(167, 243, 208, .1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .mp-hero h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    letter-spacing: -.5px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .mp-hero p {
+    font-size: 1rem;
+    opacity: .85;
+    margin: 0;
+    line-height: 1.6;
+    max-width: 520px;
+  }
+
+  .mp-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, .15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, .25);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: .9rem;
+    text-decoration: none;
+    transition: all .25s;
+    flex-shrink: 0;
+  }
+
+  .mp-back:hover {
+    background: rgba(255, 255, 255, .28);
+    color: #fff;
+  }
+
+  /* Form Sections */
+  .fs {
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    padding: 32px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .03);
+    transition: box-shadow .3s;
+  }
+
+  .fs:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+  }
+
+  .fs-hdr {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .fs-ico {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  .fs-ico.loc {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .fs-ico.farm {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .fs-ico.finance {
+    background: #fefce8;
+    color: #ca8a04;
+  }
+
+  .fs-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  /* Input styles */
+  .lbl {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .inp,
+  .sel {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: .95rem;
+    color: #0f172a;
+    font-weight: 500;
+    transition: all .2s;
+    width: 100%;
+  }
+
+  .inp:focus,
+  .sel:focus {
+    background: #fff;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, .1);
+    outline: none;
+  }
+
+  .inp:hover,
+  .sel:hover {
+    border-color: #cbd5e1;
+  }
+
+  /* Submit */
+  .go-btn {
+    background: linear-gradient(135deg, #15803d, #16a34a, #22c55e);
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    width: 100%;
+    transition: all .3s;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, .3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .go-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(22, 163, 74, .4);
+  }
+
+  /* Tip bar */
+  .tip-bar {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1px solid #86efac;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .tip-bar i {
+    color: #16a34a;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .tip-bar p {
+    margin: 0;
+    font-size: .88rem;
+    color: #166534;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+
+  @media(max-width:640px) {
+    .mp-hero {
+      padding: 24px;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mp-hero h1 {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-calculator me-2"></i>Standard Cost Estimation</h2>
-                <p class="mb-0">Enter farming parameters to estimate total production cost</p>
-            </div>
+<div class="container-fluid px-3 px-md-4 pb-5">
 
-            <div class="form-card">
-                <form method="POST" action="{{ url_for('cost_predict') }}" id="predictionForm">
-                    <!-- Location & Environmental Factors -->
-                    <h5 class="mb-3"><i class="fas fa-map-marker-alt text-primary me-2"></i>Location & Environment</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-map-pin"></i> Latitude</label>
-                                <input type="number" name="latitude" class="form-control" step="0.0001" value="7.35" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-map-pin"></i> Longitude</label>
-                                <input type="number" name="longitude" class="form-control" step="0.0001" value="81.65" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-calendar"></i> Year</label>
-                                <input type="number" name="year" class="form-control" value="{{ current_year }}" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-cloud-sun"></i> Season</label>
-                                <select name="season" class="form-select" required>
-                                    {% for season in seasons %}
-                                    <option value="{{ season }}" {% if season == 'Maha' %}selected{% endif %}>{{ season }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-mountain"></i> Soil Type</label>
-                                <select name="soil_type" class="form-select" required>
-                                    {% for soil in soil_types %}
-                                    <option value="{{ soil }}" {% if soil == 'Clay' %}selected{% endif %}>{{ soil }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-seedling"></i> Seed Type</label>
-                                <select name="seed_type" class="form-select" required>
-                                    {% for seed in seed_types %}
-                                    <option value="{{ seed }}" {% if seed == 'BG352' %}selected{% endif %}>{{ seed }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-cloud-rain"></i> Rainfall (mm)</label>
-                                <input type="number" name="rainfall" class="form-control" step="0.1" value="2200" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
-                                <input type="number" name="temperature" class="form-control" step="0.1" value="30.5" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
-                                <input type="number" name="humidity" class="form-control" step="0.1" value="85" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Farm Details -->
-                    <h5 class="mb-3 mt-4"><i class="fas fa-tractor text-success me-2"></i>Farm Details</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-chart-area"></i> Area (acres)</label>
-                                <input type="number" name="area" class="form-control" step="0.1" value="2.5" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cost Breakdown -->
-                    <h5 class="mb-3 mt-4"><i class="fas fa-rupee-sign text-warning me-2"></i>Cost Breakdown (LKR)</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-seedling"></i> Seed Cost</label>
-                                <input type="number" name="seed_cost" class="form-control" step="100" value="8000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-flask"></i> Fertilizer Cost</label>
-                                <input type="number" name="fertilizer_cost" class="form-control" step="100" value="15000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-bug"></i> Pesticide Cost</label>
-                                <input type="number" name="pesticide_cost" class="form-control" step="100" value="4000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-users"></i> Labor Cost</label>
-                                <input type="number" name="labor_cost" class="form-control" step="100" value="25000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-water"></i> Water Cost</label>
-                                <input type="number" name="water_cost" class="form-control" step="100" value="5000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-cog"></i> Machinery Cost</label>
-                                <input type="number" name="machinery_cost" class="form-control" step="100" value="10000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-ellipsis-h"></i> Other Costs</label>
-                                <input type="number" name="other_costs" class="form-control" step="100" value="2000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">
-                                <i class="fas fa-calculator me-2"></i>Estimate Total Cost
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+  <!-- Hero -->
+  <div class="mp-hero au d1">
+    <div>
+      <h1><i class="fas fa-keyboard"></i>Standard Estimation</h1>
+      <p>Enter your location, environmental conditions, and cost breakdown to generate an AI-powered farming cost
+        prediction.</p>
     </div>
+    <a href="{{ url_for('cost_index') }}" class="mp-back">
+      <i class="fas fa-arrow-left"></i> Dashboard
+    </a>
+  </div>
+
+  <!-- Tip bar -->
+  <div class="tip-bar au d2">
+    <i class="fas fa-lightbulb fa-lg"></i>
+    <p>💡 <strong>Pro tip:</strong> Use the <a href="{{ url_for('cost_sensor_predict') }}"
+        style="color:#15803d;font-weight:700;">Sensor-Based mode</a> to automatically fill Temperature, Humidity,
+      Latitude, and Longitude from your connected hardware sensors.</p>
+  </div>
+
+  <form method="POST" action="{{ url_for('cost_predict') }}">
+
+    <!-- Location & Environment -->
+    <div class="fs au d2">
+      <div class="fs-hdr">
+        <div class="fs-ico loc"><i class="fas fa-globe-asia"></i></div>
+        <h3 class="fs-title">Location &amp; Environmental Data</h3>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-map-marker-alt text-primary"></i> Latitude</label>
+          <input type="number" name="latitude" class="inp" step="0.0001" value="7.35" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-map-marker-alt text-primary"></i> Longitude</label>
+          <input type="number" name="longitude" class="inp" step="0.0001" value="81.65" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-thermometer-half text-danger"></i> Temperature (°C)</label>
+          <input type="number" name="temperature" class="inp" step="0.1" value="30.5" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-tint text-info"></i> Humidity (%)</label>
+          <input type="number" name="humidity" class="inp" step="0.1" value="85" required>
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- Farm Details -->
+    <div class="fs au d3">
+      <div class="fs-hdr">
+        <div class="fs-ico farm"><i class="fas fa-tractor"></i></div>
+        <h3 class="fs-title">Farm &amp; Cultivation Details</h3>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-calendar-alt"></i> Year</label>
+          <input type="number" name="year" class="inp" value="{{ current_year }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-sun text-warning"></i> Season</label>
+          <select name="season" class="sel" required>
+            {% for season in seasons %}
+            <option value="{{ season }}" {% if season=='Maha' %}selected{% endif %}>{{ season }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-layer-group"></i> Soil Type</label>
+          <select name="soil_type" class="sel" required>
+            {% for soil in soil_types %}
+            <option value="{{ soil }}" {% if soil=='Clay' %}selected{% endif %}>{{ soil }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-seedling text-success"></i> Seed Type</label>
+          <select name="seed_type" class="sel" required>
+            {% for seed in seed_types %}
+            <option value="{{ seed }}" {% if seed=='BG352' %}selected{% endif %}>{{ seed }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="lbl"><i class="fas fa-cloud-rain text-primary"></i> Rainfall (mm)</label>
+          <input type="number" name="rainfall" class="inp" step="0.1" value="20" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-vector-square text-primary"></i> Area (Acres)</label>
+          <input type="number" name="area" class="inp" step="0.1" value="2.5" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Costs -->
+    <div class="fs au d3">
+      <div class="fs-hdr">
+        <div class="fs-ico finance"><i class="fas fa-wallet"></i></div>
+        <h3 class="fs-title">Capital Constraints (LKR)</h3>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="lbl"><i class="fas fa-leaf text-success"></i> Seed Cost</label>
+          <input type="number" name="seed_cost" class="inp" step="100" value="8000" required>
+        </div>
+        <div class="col-md-4">
+          <label class="lbl"><i class="fas fa-flask text-info"></i> Fertilizer Cost</label>
+          <input type="number" name="fertilizer_cost" class="inp" step="100" value="15000" required>
+        </div>
+        <div class="col-md-4">
+          <label class="lbl"><i class="fas fa-bug text-danger"></i> Pesticide Cost</label>
+          <input type="number" name="pesticide_cost" class="inp" step="100" value="4000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-users text-primary"></i> Labor Cost</label>
+          <input type="number" name="labor_cost" class="inp" step="100" value="25000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-water text-info"></i> Water Cost</label>
+          <input type="number" name="water_cost" class="inp" step="100" value="5000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-cogs"></i> Machinery Cost</label>
+          <input type="number" name="machinery_cost" class="inp" step="100" value="10000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="lbl"><i class="fas fa-ellipsis-h text-warning"></i> Other Costs</label>
+          <input type="number" name="other_costs" class="inp" step="100" value="2000" required>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="go-btn au d4">
+      <i class="fas fa-rocket"></i> Launch ML Evaluation
+    </button>
+  </form>
+
 </div>
 {% endblock %}

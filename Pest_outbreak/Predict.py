@@ -10,17 +10,10 @@ import predict_image as prt
 IMG_SIZE = (224, 224)
 MODEL_PATH = "best_pest_model.h5"
 TEST_IMAGE_PATH = "1.jpg"
-TRAIN_PATH = "PestDataset/train"
 
 # Load the trained model
 model = load_model(MODEL_PATH)
-
-#  class labels
-def get_class_labels(train_path):
-    class_names = sorted(os.listdir(train_path))
-    return class_names
-
-class_labels = get_class_labels(TRAIN_PATH)
+class_labels = prt.load_class_labels()
 
 
 # prediction
@@ -33,13 +26,17 @@ def main():
 
     # Get predicted class
     predicted_class_idx, confidence_score = prt.predict_image(img_path)
+    if predicted_class_idx >= len(class_labels):
+        print("Predicted class index is out of range for the saved class labels.")
+        return
 
     predicted_class_name = class_labels[predicted_class_idx]
+    display_name = "Non-pest item" if predicted_class_name.lower() in prt.NON_PEST_LABELS else predicted_class_name
 
     # Visualize
-    Visual.visualize_prediction(img_path, predicted_class_name, confidence_score)
+    Visual.visualize_prediction(img_path, display_name, confidence_score)
 
-    print(f"Predicted Class: {predicted_class_name}")
+    print(f"Predicted Pest Type: {display_name}")
     print(f"Prediction Confidence: {confidence_score:.2f}")
 
 

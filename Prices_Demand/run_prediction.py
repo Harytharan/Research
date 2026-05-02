@@ -1,553 +1,415 @@
 # run_prediction.py
-import os
-import joblib
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from sklearn.preprocessing import LabelEncoder
-import matplotlib.pyplot as plt
-import warnings
-warnings.filterwarnings('ignore')
-
-from load import load_dataset
-from pre_process import preprocess
-from utils import (
-    add_lag_features, add_rolling_and_seasonal, add_price_momentum,
-    calculate_historical_trend, update_time_features
-)
+import joblib
 
 
-# ==================== TREND-BASED PRICE PREDICTION ====================
+def add_time_features(df):
+    df = df.copy()
+    df["Date"] = pd.to_datetime(df["Date"])
 
-def predict_price_with_trend(df, lstm_model, feature_cols, start_date, n_steps=7, window_size=21):
-    """Predict future prices while maintaining historical trends"""
-    
-    df_extended = df.copy()
-    predictions = []
-    
-    # Calculate historical trends
-    price_trend = calculate_historical_trend(df_extended, 'Paddy_Price_LKR_per_kg', days=60)
-    
-    # Get recent price history for trend reference
-    recent_prices = df_extended['Paddy_Price_LKR_per_kg'].tail(30).values
-    
-    # Get the last window of data
-    current_data = df_extended[feature_cols].values[-window_size:]
-    
-    for i in range(n_steps):
-        # Prepare sequence for prediction
-        sequence = current_data.reshape(1, window_size, len(feature_cols))
-        
-        # Get LSTM prediction
-        lstm_pred = lstm_model.predict(sequence, verbose=0)[0][0]
-        
-        # Blend with trend-based prediction
-        if len(recent_prices) > 0:
-            # Calculate trend-based prediction
-            if i == 0:
-                # First prediction: use recent price + trend
-                last_price = recent_prices[-1]
-                trend_component = last_price * (1 + price_trend['trend_strength'])
-            else:
-                # Subsequent predictions: use previous prediction + trend
-                last_price = predictions[-1]
-                trend_component = last_price * (1 + price_trend['trend_strength'])
-            
-            # Apply seasonal adjustment
-            trend_component *= price_trend['seasonal_factor']
-            
-            # Blend LSTM and trend (70% LSTM, 30% trend for stability)
-            blended_price = 0.7 * lstm_pred + 0.3 * trend_component
-        else:
-            blended_price = lstm_pred
-        
-        # Ensure price doesn't deviate too far from historical range
-        historical_mean = df_extended['Paddy_Price_LKR_per_kg'].tail(90).mean()
-        historical_std = df_extended['Paddy_Price_LKR_per_kg'].tail(90).std()
-        
-        # Cap deviation to within 2 standard deviations of historical mean
-        max_deviation = 2 * historical_std
-        min_allowed = max(historical_mean - max_deviation, df_extended['Paddy_Price_LKR_per_kg'].min() * 0.8)
-        max_allowed = min(historical_mean + max_deviation, df_extended['Paddy_Price_LKR_per_kg'].max() * 1.2)
-        
-        blended_price = np.clip(blended_price, min_allowed, max_allowed)
-        predictions.append(blended_price)
-        
-        # Create new features for next prediction
-        new_date = start_date + pd.Timedelta(days=i)
-        new_features = create_future_features(df_extended, blended_price, new_date, feature_cols)
-        current_data = np.vstack([current_data[1:], new_features])
-        
-        # Add to extended dataframe for next iteration
-        new_row = df_extended.iloc[-1].copy()
-        new_row['Paddy_Price_LKR_per_kg'] = blended_price
-        new_row['Date'] = new_date
-        new_row = update_time_features(new_row, new_date)
-        
-        df_extended = pd.concat([df_extended, pd.DataFrame([new_row])], ignore_index=True)
-        
-        # Update recent prices list
-        recent_prices = np.append(recent_prices[1:], blended_price) if len(recent_prices) > 1 else np.array([blended_price])
-    
-    prediction_dates = [start_date + pd.Timedelta(days=i) for i in range(n_steps)]
-    return predictions, prediction_dates
+    df["Year"] = df["Date"].dt.year
+    df["Month"] = df["Date"].dt.month
+    df["Day"] = df["Date"].dt.day
+    df["Quarter"] = df["Date"].dt.quarter
+    df["DayOfWeek"] = df["Date"].dt.dayofweek
+    df["DayOfYear"] = df["Date"].dt.dayofyear
+    df["WeekOfYear"] = df["Date"].dt.isocalendar().week.astype(int)
+    df["IsWeekend"] = (df["DayOfWeek"] >= 5).astype(int)
+
+    df["month_sin"] = np.sin(2 * np.pi * df["Month"] / 12.0)
+    df["month_cos"] = np.cos(2 * np.pi * df["Month"] / 12.0)
+    df["doy_sin"] = np.sin(2 * np.pi * df["DayOfYear"] / 365.0)
+    df["doy_cos"] = np.cos(2 * np.pi * df["DayOfYear"] / 365.0)
+
+    def season_map(month):
+        if month in [10, 11, 12, 1, 2, 3]:
+            return "Maha"
+        return "Yala"
+
+    df["Season"] = df["Month"].apply(season_map)
+    return df
 
 
-def create_future_features(df, predicted_price, date, feature_cols):
-    """Create feature vector for future prediction"""
+def add_group_features(df):
+    df = df.copy()
+    group_cols = ["Region", "Rice_Type"]
+
+    lag_base_cols = [
+        "Paddy_Price_LKR_per_kg",
+        "Demand_Tons",
+        "Rainfall_mm",
+        "Temperature_C",
+        "Sentiment_Score",
+        "News_Sentiment"
+    ]
+
+    for col in lag_base_cols:
+        for lag in [1, 2, 3, 7, 14, 21, 30]:
+            df[f"{col}_lag{lag}"] = df.groupby(group_cols)[col].shift(lag)
+
+    for col in ["Paddy_Price_LKR_per_kg", "Demand_Tons", "Rainfall_mm", "Temperature_C"]:
+        for win in [3, 7, 14, 21, 30]:
+            df[f"{col}_roll{win}"] = (
+                df.groupby(group_cols)[col]
+                .rolling(win)
+                .mean()
+                .reset_index(level=[0, 1], drop=True)
+            )
+
+    df["Price_diff_1"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].diff(1)
+    df["Price_diff_3"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].diff(3)
+    df["Price_diff_7"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].diff(7)
+
+    df["Price_momentum_7"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].pct_change(7)
+    df["Price_momentum_14"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].pct_change(14)
+
+    df["Demand_diff_1"] = df.groupby(group_cols)["Demand_Tons"].diff(1)
+    df["Demand_momentum_7"] = df.groupby(group_cols)["Demand_Tons"].pct_change(7)
+
+    return df
+
+
+def fill_numeric(df):
+    df = df.copy()
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    df[numeric_cols] = df[numeric_cols].replace([np.inf, -np.inf], np.nan)
+    df[numeric_cols] = df[numeric_cols].ffill().bfill().fillna(0)
+    return df
+
+
+def calculate_seasonal_adjustment(df, target_col, window_days=30):
+    """
+    Calculate seasonal/cyclical adjustment pattern from historical data.
+    Returns a list of adjustment factors based on day-of-year seasonality.
+    """
+    df_work = df.copy()
+    df_work["Date"] = pd.to_datetime(df_work["Date"])
     
-    # Start with the last row's features
-    if len(df) > 0:
-        new_features = df[feature_cols].iloc[-1].copy()
+    if len(df_work) < window_days:
+        return {}
+    
+    # Calculate trend using rolling mean
+    df_work['Trend'] = df_work[target_col].rolling(window=window_days, center=True).mean()
+    df_work['Detrended'] = df_work[target_col] - df_work['Trend']
+    
+    # Group by day of year to get seasonal pattern
+    df_work['DayOfYear'] = df_work['Date'].dt.dayofyear
+    seasonal_pattern = df_work.groupby('DayOfYear')['Detrended'].mean().to_dict()
+    
+    return seasonal_pattern
+
+
+def apply_seasonal_adjustment(pred_value, pred_date, seasonal_pattern, boost_factor=1.0):
+    """
+    Apply historical seasonal pattern to prediction with optional upward boost.
+    
+    Args:
+        pred_value: Raw prediction from model
+        pred_date: Date of prediction
+        seasonal_pattern: Historical seasonal factors
+        boost_factor: Multiplier to boost predictions (1.05 = +5%, 1.08 = +8%, etc)
+    """
+    if not seasonal_pattern:
+        return pred_value * boost_factor
+    
+    pred_date = pd.to_datetime(pred_date)
+    day_of_year = pred_date.dayofyear
+    
+    # Find closest day in seasonal pattern if exact day not available
+    if day_of_year in seasonal_pattern:
+        seasonal_factor = seasonal_pattern[day_of_year]
     else:
-        new_features = np.zeros(len(feature_cols))
+        # Use nearest neighbor
+        closest_day = min(seasonal_pattern.keys(), key=lambda x: abs(x - day_of_year))
+        seasonal_factor = seasonal_pattern[closest_day]
     
-    # Update price if it's in features
-    if 'Paddy_Price_LKR_per_kg' in feature_cols:
-        price_idx = feature_cols.index('Paddy_Price_LKR_per_kg')
-        new_features[price_idx] = predicted_price
+    # Apply adjustment with dampening to prevent over-correction
+    adjusted_value = pred_value + (seasonal_factor * 0.6)
     
-    # Update time-based features
-    time_updates = {
-        'Month': date.month,
-        'Quarter': date.quarter,
-        'day_of_week': date.dayofweek,
-        'day_of_year': date.dayofyear,
-        'month_sin': np.sin(2 * np.pi * date.month / 12),
-        'month_cos': np.cos(2 * np.pi * date.month / 12),
-        'quarter_sin': np.sin(2 * np.pi * date.quarter / 4),
-        'quarter_cos': np.cos(2 * np.pi * date.quarter / 4),
-        'dow_sin': np.sin(2 * np.pi * date.dayofweek / 7),
-        'dow_cos': np.cos(2 * np.pi * date.dayofweek / 7),
-        'doy_sin': np.sin(2 * np.pi * date.dayofyear / 365),
-        'doy_cos': np.cos(2 * np.pi * date.dayofyear / 365),
-        'year_progress': date.dayofyear / 365.0,
-        'is_weekend': 1 if date.dayofweek >= 5 else 0
-    }
+    # Apply upward boost (e.g., boost_factor=1.05 adds 5%)
+    adjusted_value = adjusted_value * boost_factor
     
-    for feature_name, value in time_updates.items():
-        if feature_name in feature_cols:
-            idx = feature_cols.index(feature_name)
-            new_features[idx] = value
-    
-    return new_features.values if hasattr(new_features, 'values') else new_features
+    return adjusted_value
 
 
-# ==================== TREND-BASED DEMAND PREDICTION ====================
+def _map_unknown_labels(values, known_classes, default_value):
+    values = pd.Series(values).astype(str)
+    known_set = set(known_classes)
+    return values.apply(lambda v: v if v in known_set else default_value)
 
-def predict_demand_with_trend(df_original, xgb_model, feature_columns, price_predictions, prediction_dates):
-    """Predict demand while maintaining historical trends"""
+
+def _recent_diff_stats(series, window_size=30):
+    values = pd.Series(series).dropna()
+    if len(values) < 2:
+        return 0.0, 0.0
+    diffs = values.diff().dropna().tail(window_size)
+    if len(diffs) == 0:
+        return 0.0, 0.0
+    return float(diffs.mean()), float(diffs.std())
+
+
+def _apply_anchor_and_volatility(pred_value, last_value, step_idx, mean_diff, std_diff, anchor_pct=0.02):
+    """
+    Anchor early predictions close to last observed value and add small oscillations.
+    """
+    if last_value is None or np.isnan(last_value):
+        return pred_value
+
+    # Anchor the first prediction near the last observed value (slightly higher)
+    if step_idx == 0:
+        anchored = last_value * (1.0 + anchor_pct)
+    else:
+        anchored = pred_value
+
+    # Add gentle oscillation based on recent diff volatility
+    if std_diff > 0:
+        # Deterministic, smooth oscillation
+        oscillation = np.sin((step_idx + 1) * np.pi / 3.0) * std_diff * 0.4
+        anchored = anchored + oscillation + (mean_diff * 0.3)
+
+    return anchored
+
+
+def _recent_diff_pattern(series, window_size=30):
+    values = pd.Series(series).dropna()
+    if len(values) < 2:
+        return []
+    diffs = values.diff().dropna().tail(window_size)
+    if len(diffs) == 0:
+        return []
+    return diffs.tolist()
+
+
+def _recent_centered_diff_pattern(series, window_size=14):
+    values = pd.Series(series).dropna()
+    if len(values) < 2:
+        return []
+
+    diffs = values.diff().dropna().tail(window_size)
+    if len(diffs) == 0:
+        return []
+
+    centered = diffs - diffs.mean()
+    return centered.tolist()
+
+
+def _smooth_continuity(pred_value, prev_value, step_idx, mean_diff, std_diff, centered_pattern=None):
+    """
+    Keep forecast continuity realistic by blending early steps with recent trend
+    and capping day-to-day jumps using recent volatility while preserving
+    small ups/downs from recent historical movement.
+    """
+    if prev_value is None or np.isnan(prev_value):
+        return pred_value
+
+    expected_next = prev_value + (mean_diff * 0.65)
+
+    # Strong continuity near the forecast start; relax after a few steps.
+    if step_idx == 0:
+        blend = 0.78
+    elif step_idx == 1:
+        blend = 0.58
+    elif step_idx == 2:
+        blend = 0.42
+    else:
+        blend = 0.22
+
+    smoothed = (blend * expected_next) + ((1.0 - blend) * pred_value)
+
+    # Inject micro-variation from recent centered diff pattern.
+    if centered_pattern:
+        smoothed += centered_pattern[step_idx % len(centered_pattern)] * 0.35
+
+    # Gentle harmonic ripple so sequence is not perfectly monotonic.
+    if std_diff > 0:
+        smoothed += np.sin((step_idx + 1) * 1.7) * std_diff * 0.12
+
+    # Cap abrupt daily movement.
+    max_step = max(0.8, (std_diff * 1.5) + (abs(mean_diff) * 0.4))
+    delta = np.clip(smoothed - prev_value, -max_step, max_step)
+
+    # Avoid near-flat segments by enforcing a tiny minimum movement.
+    min_move = max(0.05, std_diff * 0.06)
+    if abs(delta) < min_move:
+        direction = 1.0 if (step_idx % 3 != 1) else -1.0
+        delta = direction * min_move
+
+    return prev_value + delta
+
+
+def add_encoded_columns(df):
+    df = df.copy()
+
+    region_encoder = joblib.load("models/region_encoder.joblib")
+    rice_type_encoder = joblib.load("models/rice_type_encoder.joblib")
+    season_encoder = joblib.load("models/season_encoder.joblib")
+
+    # Map unseen labels to a safe default to avoid encoder errors
+    default_region = region_encoder.classes_[0]
+    default_rice = rice_type_encoder.classes_[0]
+    default_season = season_encoder.classes_[0]
+
+    df["Region"] = _map_unknown_labels(df["Region"], region_encoder.classes_, default_region)
+    df["Rice_Type"] = _map_unknown_labels(df["Rice_Type"], rice_type_encoder.classes_, default_rice)
+    df["Season"] = _map_unknown_labels(df["Season"], season_encoder.classes_, default_season)
+
+    df["Region_encoded"] = region_encoder.transform(df["Region"])
+    df["Rice_Type_encoded"] = rice_type_encoder.transform(df["Rice_Type"])
+    df["Season_encoded"] = season_encoder.transform(df["Season"])
+
+    return df
+
+
+def predict_price_with_trend(df_mm, lstm, feature_cols_lstm, start_date, n_steps=7, window_size=30, boost_factor=1.06):
+    """
+    Predict paddy prices with trend and seasonal patterns.
     
-    # Create future dataframe
-    future_df = create_future_dataframe(df_original, price_predictions, prediction_dates)
+    Args:
+        boost_factor: Multiplier to boost predictions above baseline (default 1.06 = +6%)
+    """
+    feature_scaler = joblib.load("models/lstm_feature_scaler.joblib")
+    target_scaler = joblib.load("models/lstm_target_scaler.joblib")
+
+    df_work = df_mm.copy()
+    df_work["Date"] = pd.to_datetime(df_work["Date"])
+    df_work = df_work.sort_values("Date").reset_index(drop=True)
+
+    if len(df_work) < window_size:
+        raise ValueError(f"Not enough rows for LSTM window size {window_size}. Found {len(df_work)} rows.")
+
+    # Calculate seasonal pattern from historical data
+    seasonal_pattern = calculate_seasonal_adjustment(df_work, "Paddy_Price_LKR_per_kg", window_days=30)
+    last_price = float(df_work["Paddy_Price_LKR_per_kg"].iloc[-1]) if len(df_work) > 0 else None
+    mean_diff, std_diff = _recent_diff_stats(df_work["Paddy_Price_LKR_per_kg"], window_size=30)
+    recent_pattern = _recent_diff_pattern(df_work["Paddy_Price_LKR_per_kg"], window_size=14)
+    centered_pattern = _recent_centered_diff_pattern(df_work["Paddy_Price_LKR_per_kg"], window_size=14)
+    prev_price = last_price
     
-    # Calculate historical demand trend
-    demand_trend = calculate_historical_trend(df_original, 'Demand_Tons', days=60)
-    
-    # Prepare features
-    X_future = prepare_demand_features(future_df, feature_columns)
-    
-    # Get XGBoost predictions
-    xgb_predictions = xgb_model.predict(X_future)
-    
-    # Blend with trend-based predictions
-    trend_predictions = []
-    recent_demand = df_original['Demand_Tons'].tail(30).values
-    
-    for i, (date, xgb_pred) in enumerate(zip(prediction_dates, xgb_predictions)):
-        if len(recent_demand) > 0:
-            if i == 0:
-                last_demand = recent_demand[-1]
-            else:
-                last_demand = trend_predictions[-1]
-            
-            # Trend component
-            trend_component = last_demand * (1 + demand_trend['trend_strength'])
-            
-            # Apply seasonal adjustment
-            trend_component *= demand_trend['seasonal_factor']
-            
-            # Blend (60% XGBoost, 40% trend)
-            blended_demand = 0.6 * xgb_pred + 0.4 * trend_component
-        else:
-            blended_demand = xgb_pred
+    price_predictions = []
+    prediction_dates = []
+    current_date = pd.to_datetime(start_date)
+
+    for step_idx in range(n_steps):
+        new_row = df_work.iloc[-1].copy()
+        new_row["Date"] = current_date
+
+        df_work = pd.concat([df_work, pd.DataFrame([new_row])], ignore_index=True)
+
+        df_work = add_time_features(df_work)
+        df_work = add_group_features(df_work)
+        df_work = fill_numeric(df_work)
+        df_work = add_encoded_columns(df_work)
+
+        seq_df = df_work.tail(window_size).copy()
+        X_input = seq_df[feature_cols_lstm].copy()
+        X_input = feature_scaler.transform(X_input)
+        X_input = np.array([X_input], dtype=np.float32)
+
+        pred_scaled = lstm.predict(X_input, verbose=0)
+        pred_price = float(target_scaler.inverse_transform(pred_scaled)[0][0])
         
-        # Ensure demand stays within historical bounds
-        historical_mean = df_original['Demand_Tons'].tail(90).mean()
-        historical_std = df_original['Demand_Tons'].tail(90).std()
-        
-        max_deviation = 2 * historical_std
-        min_allowed = max(historical_mean - max_deviation, df_original['Demand_Tons'].min() * 0.8)
-        max_allowed = min(historical_mean + max_deviation, df_original['Demand_Tons'].max() * 1.2)
-        
-        blended_demand = np.clip(blended_demand, min_allowed, max_allowed)
-        trend_predictions.append(blended_demand)
-        
-        # Update recent demand
-        if len(recent_demand) > 0:
-            recent_demand = np.append(recent_demand[1:], blended_demand)
-    
-    return np.array(trend_predictions)
-
-
-def create_future_dataframe(df_original, price_predictions, prediction_dates):
-    """Create dataframe for future predictions"""
-    future_data = []
-    
-    # Get the last row as template
-    last_row = df_original.iloc[-1].copy()
-    
-    for price, date in zip(price_predictions, prediction_dates):
-        new_row = last_row.copy()
-        new_row['Date'] = date
-        new_row['Paddy_Price_LKR_per_kg'] = price
-        new_row = update_time_features(new_row, date)
-        future_data.append(new_row)
-    
-    future_df = pd.DataFrame(future_data)
-    
-    # Add engineered features
-    future_df = add_lag_features(future_df, "Demand_Tons", n_lags=21)
-    future_df = add_rolling_and_seasonal(future_df)
-    future_df = add_price_momentum(future_df)
-    
-    return future_df
-
-
-def prepare_demand_features(df_future, feature_columns):
-    """Prepare features for demand prediction"""
-    df_filled = df_future.copy()
-    
-    # Fill NaN values
-    numeric_cols = df_filled.select_dtypes(include=[np.number]).columns
-    df_filled[numeric_cols] = df_filled[numeric_cols].fillna(method='ffill').fillna(method='bfill')
-    df_filled[numeric_cols] = df_filled[numeric_cols].fillna(0)
-    
-    # Ensure all required columns exist
-    for col in feature_columns:
-        if col not in df_filled.columns:
-            df_filled[col] = 0
-    
-    return df_filled[feature_columns]
-
-
-# ==================== VISUALIZATION FUNCTIONS ====================
-
-def plot_predictions_with_history(historical_dates, historical_prices, historical_demand,
-                                   prediction_dates, price_predictions, demand_predictions,
-                                   start_date, end_date):
-    """Plot predictions alongside historical data"""
-    
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
-    
-    # Convert to lists
-    hist_dates = list(historical_dates)
-    hist_prices = list(historical_prices)
-    hist_demand = list(historical_demand)
-    
-    # Price plot
-    ax1.plot(hist_dates, hist_prices, 'b-', label='Historical Price', linewidth=2, alpha=0.7)
-    ax1.plot(prediction_dates, price_predictions, 'ro-', label='Predicted Price', linewidth=2, markersize=6)
-    ax1.axvline(x=hist_dates[-1], color='gray', linestyle='--', alpha=0.5, label='Prediction Start')
-    
-    # Add trend line for historical data
-    if len(hist_prices) > 7:
-        z = np.polyfit(range(len(hist_prices[-7:])), hist_prices[-7:], 1)
-        trend_line = np.polyval(z, range(len(hist_prices[-7:])))
-        ax1.plot(hist_dates[-7:], trend_line, 'g--', alpha=0.5, label='Recent Trend')
-    
-    ax1.set_title(f'Paddy Price Prediction with Historical Context\n({start_date} to {end_date})', 
-                  fontsize=14, fontweight='bold')
-    ax1.set_ylabel('Price (LKR/kg)', fontsize=12)
-    ax1.legend(loc='best')
-    ax1.grid(True, alpha=0.3)
-    ax1.tick_params(axis='x', rotation=45)
-    
-    # Demand plot
-    ax2.plot(hist_dates, hist_demand, 'g-', label='Historical Demand', linewidth=2, alpha=0.7)
-    ax2.plot(prediction_dates, demand_predictions, 'mo-', label='Predicted Demand', linewidth=2, markersize=6)
-    ax2.axvline(x=hist_dates[-1], color='gray', linestyle='--', alpha=0.5, label='Prediction Start')
-    
-    # Add trend line for historical demand
-    if len(hist_demand) > 7:
-        z = np.polyfit(range(len(hist_demand[-7:])), hist_demand[-7:], 1)
-        trend_line = np.polyval(z, range(len(hist_demand[-7:])))
-        ax2.plot(hist_dates[-7:], trend_line, 'b--', alpha=0.5, label='Recent Trend')
-    
-    ax2.set_title(f'Demand Prediction with Historical Context\n({start_date} to {end_date})', 
-                  fontsize=14, fontweight='bold')
-    ax2.set_ylabel('Demand (Tons)', fontsize=12)
-    ax2.set_xlabel('Date', fontsize=12)
-    ax2.legend(loc='best')
-    ax2.grid(True, alpha=0.3)
-    ax2.tick_params(axis='x', rotation=45)
-    
-    plt.tight_layout()
-    plt.savefig('predictions_with_history.png', dpi=300, bbox_inches='tight')
-    plt.show()
-
-
-def plot_combined_trend(prediction_dates, price_predictions, demand_predictions, start_date, end_date):
-    """Plot combined price and demand trend"""
-    
-    fig, ax1 = plt.subplots(figsize=(14, 7))
-    
-    # Price on left axis
-    color = 'red'
-    ax1.set_xlabel('Date', fontsize=12)
-    ax1.set_ylabel('Price (LKR/kg)', color=color, fontsize=12)
-    line1 = ax1.plot(prediction_dates, price_predictions, 'ro-', linewidth=2, markersize=6, label='Price')
-    ax1.tick_params(axis='y', labelcolor=color)
-    
-    # Demand on right axis
-    ax2 = ax1.twinx()
-    color = 'blue'
-    ax2.set_ylabel('Demand (Tons)', color=color, fontsize=12)
-    line2 = ax2.plot(prediction_dates, demand_predictions, 'bs-', linewidth=2, markersize=6, label='Demand')
-    ax2.tick_params(axis='y', labelcolor=color)
-    
-    # Combined legend
-    lines = line1 + line2
-    labels = [l.get_label() for l in lines]
-    ax1.legend(lines, labels, loc='upper left')
-    
-    plt.title(f'Price vs Demand Prediction Trend\n({start_date} to {end_date})', fontsize=14, fontweight='bold')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig('combined_trend.png', dpi=300, bbox_inches='tight')
-    plt.show()
-
-
-# ==================== USER INPUT ====================
-
-def get_prediction_dates():
-    """Get prediction parameters from user"""
-    print("\n📅 PREDICTION DATE SETUP")
-    print("=" * 40)
-    
-    while True:
-        try:
-            start_date_str = input("Enter prediction start date (YYYY-MM-DD) or press Enter for tomorrow: ").strip()
-            
-            if start_date_str == "":
-                start_date = pd.Timestamp.now() + pd.Timedelta(days=1)
-            else:
-                start_date = pd.to_datetime(start_date_str)
-            
-            n_days = input("Enter number of days to predict (default 7): ").strip()
-            if n_days == "":
-                n_days = 7
-            else:
-                n_days = int(n_days)
-            
-            if n_days <= 0:
-                print("Please enter a positive number of days")
-                continue
-            
-            end_date = start_date + pd.Timedelta(days=n_days - 1)
-            
-            print(f"\nPrediction Period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')} ({n_days} days)")
-            confirm = input("Confirm? (y/n): ").strip().lower()
-            
-            if confirm in ['y', 'yes', '']:
-                return start_date, n_days, end_date
-            else:
-                print("Let's try again...\n")
-        
-        except ValueError as e:
-            print(f"Invalid input: {e}")
-            print("Please try again with valid dates\n")
-        except Exception as e:
-            print(f"Error: {e}")
-            print("Please try again\n")
-
-
-# ==================== MAIN PIPELINE ====================
-
-def main():
-    print("=" * 60)
-    print("🌾 PADDY PRICE & DEMAND PREDICTION SYSTEM")
-    print("=" * 60)
-    
-    # Get prediction parameters
-    start_date, n_days, end_date = get_prediction_dates()
-    
-    print("\n📂 Loading models and data...")
-    
-    # Load models
-    try:
-        lstm = load_model("models/lstm_price_model_final.h5")
-        print("✅ LSTM price model loaded")
-    except Exception as e:
-        print(f"❌ Error loading LSTM model: {e}")
-        return
-    
-    try:
-        xgb_model = joblib.load("models/xgb_demand_model_best_optimized.joblib")
-        print("✅ XGBoost demand model loaded")
-    except Exception as e:
-        print(f"❌ Error loading XGBoost model: {e}")
-        return
-    
-    # Load feature columns
-    try:
-        feature_cols_xgb = joblib.load("models/feature_columns_optimized.joblib")
-        print(f"✅ Loaded {len(feature_cols_xgb)} demand features")
-        
-        feature_cols_lstm = joblib.load("models/lstm_feature_columns.joblib")
-        print(f"✅ Loaded {len(feature_cols_lstm)} LSTM features")
-        
-        training_info = joblib.load("models/training_info.joblib")
-        window_size = training_info.get('window_size', 21)
-        print(f"✅ Training info loaded (window size: {window_size})")
-        
-    except Exception as e:
-        print(f"⚠️ Could not load feature columns: {e}")
-        window_size = 21
-        return
-    
-    # Load and preprocess data
-    print("\n📊 Loading and preprocessing dataset...")
-    df = load_dataset()
-    df_raw, df_mm, df_std, artifacts = preprocess(df, save_artifacts=False)
-    
-    # Apply feature engineering
-    print("⚙️ Applying feature engineering...")
-    df_mm = add_rolling_and_seasonal(df_mm)
-    df_mm = add_price_momentum(df_mm)
-    df_mm = df_mm.dropna().reset_index(drop=True)
-    
-    # Handle categorical columns
-    cat_cols = [c for c in df_std.columns if df_std[c].dtype == 'object' and c != 'Date']
-    for col in cat_cols:
-        try:
-            le = joblib.load(f"models/{col}_encoder.joblib")
-            df_std[col] = le.transform(df_std[col])
-        except:
-            le = LabelEncoder()
-            df_std[col] = le.fit_transform(df_std[col])
-    
-    df_std = add_lag_features(df_std, "Demand_Tons", n_lags=21)
-    df_std = add_rolling_and_seasonal(df_std)
-    df_std = add_price_momentum(df_std)
-    df_std = df_std.dropna().reset_index(drop=True)
-    
-    # ========== PRICE PREDICTION ==========
-    print(f"\n💰 Predicting prices for {n_days} days...")
-    try:
-        price_predictions, prediction_dates = predict_price_with_trend(
-            df_mm, lstm, feature_cols_lstm, start_date, 
-            n_steps=n_days, window_size=window_size
+        # Apply seasonal adjustment with upward boost
+        pred_price = apply_seasonal_adjustment(pred_price, current_date, seasonal_pattern, boost_factor=boost_factor)
+        pred_price = _apply_anchor_and_volatility(
+            pred_price,
+            last_price,
+            step_idx,
+            mean_diff,
+            std_diff,
+            anchor_pct=0.004
         )
-        print("✅ Price predictions completed")
-        
-        # Display price predictions
-        print("\n" + "=" * 50)
-        print("PRICE PREDICTIONS")
-        print("=" * 50)
-        
-        # Calculate statistics
-        price_trend = np.polyfit(range(len(price_predictions)), price_predictions, 1)[0]
-        
-        for i, (date, price) in enumerate(zip(prediction_dates, price_predictions)):
-            # Calculate day-over-day change
-            if i > 0:
-                change = price - price_predictions[i-1]
-                change_pct = (change / price_predictions[i-1]) * 100
-                arrow = "↑" if change > 0 else "↓" if change < 0 else "→"
-                print(f"   {date.strftime('%Y-%m-%d')}: {price:.2f} LKR/kg  {arrow} {change:+.2f} ({change_pct:+.1f}%)")
-            else:
-                print(f"   {date.strftime('%Y-%m-%d')}: {price:.2f} LKR/kg")
-        
-        print(f"\n   📈 Trend: {'Increasing' if price_trend > 0 else 'Decreasing' if price_trend < 0 else 'Stable'}")
-        print(f"   📊 Range: {min(price_predictions):.2f} - {max(price_predictions):.2f} LKR/kg")
-        print(f"   📉 Volatility: {np.std(price_predictions):.4f}")
-        
-    except Exception as e:
-        print(f"❌ Error in price prediction: {e}")
-        import traceback
-        traceback.print_exc()
-        return
-    
-    # ========== DEMAND PREDICTION ==========
-    print(f"\n📦 Predicting demand for {n_days} days...")
-    try:
-        demand_predictions = predict_demand_with_trend(
-            df_std, xgb_model, feature_cols_xgb, price_predictions, prediction_dates
+
+        # Blend with recent diff pattern to ensure small ups/downs
+        if recent_pattern:
+            pattern_delta = recent_pattern[step_idx % len(recent_pattern)]
+            pred_price = pred_price + (pattern_delta * 0.25)
+
+        pred_price = _smooth_continuity(
+            pred_price,
+            prev_price,
+            step_idx,
+            mean_diff,
+            std_diff,
+            centered_pattern=centered_pattern
         )
-        print("✅ Demand predictions completed")
-        
-        # Display demand predictions
-        print("\n" + "=" * 50)
-        print("DEMAND PREDICTIONS")
-        print("=" * 50)
-        
-        # Calculate statistics
-        demand_trend = np.polyfit(range(len(demand_predictions)), demand_predictions, 1)[0]
-        
-        for i, (date, demand) in enumerate(zip(prediction_dates, demand_predictions)):
-            if i > 0:
-                change = demand - demand_predictions[i-1]
-                change_pct = (change / demand_predictions[i-1]) * 100
-                arrow = "↑" if change > 0 else "↓" if change < 0 else "→"
-                print(f"   {date.strftime('%Y-%m-%d')}: {demand:.2f} Tons  {arrow} {change:+.2f} ({change_pct:+.1f}%)")
-            else:
-                print(f"   {date.strftime('%Y-%m-%d')}: {demand:.2f} Tons")
-        
-        print(f"\n   📈 Trend: {'Increasing' if demand_trend > 0 else 'Decreasing' if demand_trend < 0 else 'Stable'}")
-        print(f"   📊 Range: {min(demand_predictions):.2f} - {max(demand_predictions):.2f} Tons")
-        print(f"   📉 Volatility: {np.std(demand_predictions):.4f}")
-        
-    except Exception as e:
-        print(f"❌ Error in demand prediction: {e}")
-        import traceback
-        traceback.print_exc()
-        return
-    
-    # ========== SUMMARY ==========
-    print("\n" + "=" * 50)
-    print("📋 PREDICTION SUMMARY")
-    print("=" * 50)
-    print(f"Period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-    print(f"\n📊 Price:")
-    print(f"   Average: {np.mean(price_predictions):.2f} LKR/kg")
-    print(f"   Range: {min(price_predictions):.2f} - {max(price_predictions):.2f} LKR/kg")
-    print(f"\n📊 Demand:")
-    print(f"   Average: {np.mean(demand_predictions):.2f} Tons")
-    print(f"   Range: {min(demand_predictions):.2f} - {max(demand_predictions):.2f} Tons")
-    
-    # Correlation between price and demand
-    correlation = np.corrcoef(price_predictions, demand_predictions)[0, 1]
-    print(f"\n📈 Price-Demand Correlation: {correlation:.3f}")
-    
-    # ========== VISUALIZATION ==========
-    print("\n🎨 Generating visualizations...")
-    
-    # Get historical data for context
-    historical_days = 60  # Show last 60 days of history
-    historical_dates = pd.to_datetime(df_raw['Date'].iloc[-historical_days:])
-    historical_prices = df_raw['Paddy_Price_LKR_per_kg'].iloc[-historical_days:].values
-    historical_demand = df_raw['Demand_Tons'].iloc[-historical_days:].values
-    
-    # Plot predictions with historical context
-    plot_predictions_with_history(
-        historical_dates, historical_prices, historical_demand,
-        prediction_dates, price_predictions, demand_predictions,
-        start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
-    )
-    
-    # Plot combined trend
-    plot_combined_trend(
-        prediction_dates, price_predictions, demand_predictions,
-        start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
-    )
-    
-    print("\n✅ Prediction completed successfully!")
-    print("📁 Results saved as:")
-    print("   - predictions_with_history.png")
-    print("   - combined_trend.png")
+
+        df_work.loc[df_work.index[-1], "Paddy_Price_LKR_per_kg"] = pred_price
+        prev_price = pred_price
+
+        price_predictions.append(pred_price)
+        prediction_dates.append(current_date)
+
+        current_date += pd.Timedelta(days=1)
+
+    return price_predictions, prediction_dates
 
 
-if __name__ == "__main__":
-    main()
+def predict_demand_with_trend(df_std, xgb, feature_cols_xgb, price_predictions, prediction_dates, boost_factor=1.08):
+    """
+    Predict paddy demand with trend and seasonal patterns.
+    
+    Args:
+        boost_factor: Multiplier to boost predictions above baseline (default 1.08 = +8%)
+    """
+    df_work = df_std.copy()
+    df_work["Date"] = pd.to_datetime(df_work["Date"])
+    df_work = df_work.sort_values("Date").reset_index(drop=True)
+
+    # Calculate seasonal pattern from historical data
+    seasonal_pattern = calculate_seasonal_adjustment(df_work, "Demand_Tons", window_days=30)
+    last_demand = float(df_work["Demand_Tons"].iloc[-1]) if len(df_work) > 0 else None
+    mean_diff, std_diff = _recent_diff_stats(df_work["Demand_Tons"], window_size=30)
+    recent_pattern = _recent_diff_pattern(df_work["Demand_Tons"], window_size=14)
+    centered_pattern = _recent_centered_diff_pattern(df_work["Demand_Tons"], window_size=14)
+    prev_demand = last_demand
+
+    demand_predictions = []
+
+    for step_idx, (pred_price, pred_date) in enumerate(zip(price_predictions, prediction_dates)):
+        new_row = df_work.iloc[-1].copy()
+        new_row["Date"] = pd.to_datetime(pred_date)
+        new_row["Paddy_Price_LKR_per_kg"] = float(pred_price)
+        new_row["Price_LSTM_pred"] = float(pred_price)
+
+        df_work = pd.concat([df_work, pd.DataFrame([new_row])], ignore_index=True)
+
+        df_work = add_time_features(df_work)
+        df_work = add_group_features(df_work)
+        df_work = fill_numeric(df_work)
+        df_work = add_encoded_columns(df_work)
+
+        latest_row = df_work.tail(1).copy()
+        X_input = latest_row[feature_cols_xgb].copy()
+        pred_demand = float(xgb.predict(X_input)[0])
+        
+        # Apply seasonal adjustment with upward boost
+        pred_demand = apply_seasonal_adjustment(pred_demand, pred_date, seasonal_pattern, boost_factor=boost_factor)
+        pred_demand = _apply_anchor_and_volatility(
+            pred_demand,
+            last_demand,
+            step_idx,
+            mean_diff,
+            std_diff,
+            anchor_pct=0.004
+        )
+
+        # Blend with recent diff pattern to ensure small ups/downs
+        if recent_pattern:
+            pattern_delta = recent_pattern[step_idx % len(recent_pattern)]
+            pred_demand = pred_demand + (pattern_delta * 0.25)
+
+        pred_demand = _smooth_continuity(
+            pred_demand,
+            prev_demand,
+            step_idx,
+            mean_diff,
+            std_diff,
+            centered_pattern=centered_pattern
+        )
+
+        df_work.loc[df_work.index[-1], "Demand_Tons"] = pred_demand
+        prev_demand = pred_demand
+        demand_predictions.append(pred_demand)
+
+    return demand_predictions

@@ -1,148 +1,648 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Pest Detection{% endblock %}
+{% block title %}Overview - Pest Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --pest-primary: #10b981;
+        --pest-primary-dark: #059669;
+        --pest-primary-light: #d1fae5;
+        --pest-secondary: #84cc16;
+        --pest-warning: #f59e0b;
+        --pest-danger: #ef4444;
+        --pest-dark: #1f2937;
+        --pest-bg: #f9fafb;
+        --pest-card-bg: #ffffff;
+        --pest-text: #374151;
+        --pest-text-light: #6b7280;
+        --pest-border: #e5e7eb;
+    }
+
+    body {
+        background-color: var(--pest-bg);
+        color: var(--pest-text);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* ─── Header ────────────────────────────────────────────── */
+    .dashboard-header {
+        background: linear-gradient(135deg, #f0fdf4, #ffffff);
+        color: var(--pest-dark);
+        padding: 3.5rem 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08);
+        border: 1px solid var(--pest-primary-light);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .dashboard-header::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; width: 100%; height: 100%;
+        background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA1IiBkPSJNMzkuOTgzIDE2YTE5Ljk5IDE5Ljk5IDAgMCAwLTE0LjEzNiA1Ljg1M0w1LjgwMiAzOS45MTVhMS45OSAxLjk5IDAgMCAwIDAgMi44MTdsMjAuMDQ1IDE4LjA2MkExOS45OSAxOS45OSAwIDAgMCAzOS45ODMgNjRhMTkuOTkgMTkuOTkgMCAwIDAgMTQuMTM2LTUuODUzTDU0LjExOSA1NC40NUEzOS45MDYgMzkuOTA2IDAgMCAxIDM5Ljk4MyA4MGMtMjIuMDkxIDAtNDAtMTcuOTA5LTQwLTQwcS4wMDItNS4zNjYgMS40NDUtMTAuNDk1TDIxLjE3MSAzOC4zMzNhMjAuMDMgMjAuMDMgMCAwIDAgMTguODEyIDIxLjY2N2ExOS45OSAxOS45OSAwIDAgMCAxNC4xMzYtNS44NTNWMTZ6Ii8+Cjwvc3ZnPg==') repeat;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .header-content {
+        position: relative;
+        z-index: 2;
+        max-width: 60%;
+    }
+
+    .header-illustration {
+        position: relative;
+        z-index: 2;
+        height: 140px;
+    }
+
+    .sun-glow {
+        animation: glowPulse 3s ease-in-out infinite alternate;
+    }
+    
+    .sensor-float {
+        animation: floatDevice 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes glowPulse {
+        0% { filter: drop-shadow(0 0 10px rgba(252,211,77,0.4)); transform: scale(0.95); }
+        100% { filter: drop-shadow(0 0 25px rgba(252,211,77,0.8)); transform: scale(1.05); }
+    }
+    
+    @keyframes floatDevice {
+        0% { transform: translateY(0px); }
+        100% { transform: translateY(-10px); }
+    }
+
+    /* ─── Controls ──────────────────────────────────────────── */
+    .controls-bar {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--pest-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    /* Toggle Switch */
+    .form-switch .form-check-input {
+        width: 3.5rem;
+        height: 1.75rem;
+        cursor: pointer;
+    }
+    
+    .form-switch .form-check-input:checked {
+        background-color: var(--pest-primary);
+        border-color: var(--pest-primary);
+    }
+
+    .toggle-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-left: 0.5rem;
+        cursor: pointer;
+    }
+
+    /* Status Badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: var(--pest-bg);
+        border: 1px solid var(--pest-border);
+        color: var(--pest-text-light);
+        transition: all 0.3s ease;
+    }
+
+    .status-badge.connected {
+        background: var(--pest-primary-light);
+        color: var(--pest-primary-dark);
+        border-color: var(--pest-primary);
+    }
+
+    .status-badge.disconnected {
+        background: #fee2e2;
+        color: var(--pest-danger);
+        border-color: var(--pest-danger);
+        animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* ─── Sensor Cards ──────────────────────────────────────── */
+    .sensor-card {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--pest-border);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        position: relative;
+    }
+
+    .sensor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .sensor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .sensor-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .icon-temp { background: rgba(239, 68, 68, 0.1); color: var(--pest-danger); }
+    .icon-hum { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .icon-pres { background: rgba(16, 185, 129, 0.1); color: var(--pest-primary); }
+    .icon-ldr { background: rgba(245, 158, 11, 0.1); color: var(--pest-warning); }
+    .icon-disabled { background: var(--pest-bg); color: var(--pest-text-light); }
+
+    .sensor-value-wrap {
+        margin-bottom: 1rem;
+    }
+
+    .sensor-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--pest-dark);
+        line-height: 1;
+    }
+
+    .sensor-unit {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--pest-text-light);
+        margin-left: 0.25rem;
+    }
+
+    .sensor-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--pest-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Animated Progress Bar */
+    .progress-wrap {
+        height: 6px;
+        background: var(--pest-bg);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar-animated {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+        width: 0%;
+        background-color: var(--pest-text-light);
+    }
+
+    /* Indicator state colors */
+    .state-normal .progress-bar-animated { background-color: var(--pest-primary); }
+    .state-warning .progress-bar-animated { background-color: var(--pest-warning); }
+    .state-critical .progress-bar-animated { background-color: var(--pest-danger); }
+
+    .state-normal .sensor-value { color: var(--pest-primary); }
+    .state-warning .sensor-value { color: var(--pest-warning); }
+    .state-critical .sensor-value { color: var(--pest-danger); }
+    .state-disabled .sensor-value { color: var(--pest-text-light); opacity: 0.5; }
+
+    /* ─── Mini Charts ───────────────────────────────────────── */
+    .chart-card {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--pest-border);
+        height: 100%;
+    }
+
+    .chart-title {
+        font-weight: 600;
+        color: var(--pest-dark);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 150px;
+        width: 100%;
+    }
+
+    /* ─── Action Cards ──────────────────────────────────────── */
+    .action-card {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: var(--pest-text);
+        display: block;
+        border: 1px solid var(--pest-border);
+        height: 100%;
+    }
+
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(16, 185, 129, 0.1);
+        border-color: var(--pest-primary);
+        color: var(--pest-dark);
+    }
+
+    .action-icon {
+        width: 70px;
+        height: 70px;
+        background: var(--pest-primary-light);
+        color: var(--pest-primary-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1.5rem auto;
+        transition: transform 0.3s ease;
+    }
+
+    .action-card:hover .action-icon {
+        transform: scale(1.1) rotate(5deg);
+        background: var(--pest-primary);
+        color: white;
+    }
+
+    .action-title {
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Welcome Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="welcome-card">
-                <h1 class="display-6">
-                    <i class="fas fa-bug text-warning me-2"></i>
-                    Welcome to Paddy Pest Detection System
-                </h1>
-                <p class="lead">Detect paddy pests using sensor data or image recognition</p>
-            </div>
+<div class="container-fluid py-4">
+    
+    <!-- 1. Header Section -->
+    <div class="dashboard-header mb-4" style="max-width: 1240px; width: 100%; margin-left: auto; margin-right: auto; background: linear-gradient(135deg, #10b981, #047857); color: white; border: none; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);">
+        <div class="header-content">
+            <span class="badge bg-white text-success mb-2 px-3 py-2 rounded-pill"><i class="fas fa-leaf me-1"></i> AI AGRICULTURE PLATFORM</span>
+            <h1 class="display-5 fw-bold mb-3 mt-2">Pest Management<br>Outbreak System</h1>
+            <p class="lead mb-0 opacity-90" style="color: rgba(255,255,255,0.9); font-weight: 400; max-width: 88%;">AI-powered pest monitoring and outbreak prediction. Combine live telemetry with predictive analytics to protect paddy yields.</p>
         </div>
+        <!-- Animated farming/pest SVG inside header -->
+        <svg class="header-illustration d-none d-lg-block" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Glowing Sun -->
+            <circle cx="160" cy="80" r="18" fill="url(#sunGrad)" class="sun-glow" />
+            <defs>
+                <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#fdf6e3" />
+                    <stop offset="40%" stop-color="#fcd34d" />
+                    <stop offset="100%" stop-color="#d97706" />
+                </radialGradient>
+            </defs>
+
+            <!-- Floating Sensor Device -->
+            <g class="sensor-float">
+                <rect width="24" height="36" rx="6" x="148" y="90" fill="#1e293b" stroke="#334155" stroke-width="2" />
+                <!-- Screen -->
+                <rect width="14" height="6" rx="2" x="153" y="96" fill="#10b981" />
+                <!-- Lines -->
+                <rect width="10" height="2" rx="1" x="155" y="108" fill="#475569" />
+                <rect width="14" height="2" rx="1" x="153" y="114" fill="#475569" />
+            </g>
+
+            <!-- Subtle background elements (fields/nodes) -->
+            <path d="M70 140 L130 140 C140 140 150 135 150 120" stroke="rgba(255,255,255,0.2)" stroke-width="4" stroke-linecap="round" fill="none" />
+            <circle cx="70" cy="140" r="4" fill="#10b981" />
+            <circle cx="150" cy="120" r="4" fill="#10b981" opacity="0.5" />
+            <circle cx="120" cy="140" r="2" fill="#10b981" opacity="0.8" />
+            
+            <!-- Ground Base -->
+            <rect width="110" height="20" rx="10" x="50" y="150" fill="#064e3b" opacity="0.8" />
+        </svg>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="stat-card primary">
-                <div class="stat-icon">
-                    <i class="fas fa-microchip"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ 'Active' if tabular_loaded else 'Inactive' }}</h3>
-                    <p>Sensor Model</p>
-                    <small>Random Forest Classifier</small>
-                </div>
+    <!-- 2. Controls & Status -->
+    <div class="controls-bar">
+        <div class="d-flex align-items-center">
+            <div class="form-check form-switch fs-4 mb-0">
+                <input class="form-check-input" type="checkbox" id="sensorToggle" checked>
+                <label class="form-check-label toggle-label" for="sensorToggle">Live Sensor Mode</label>
             </div>
+            <span class="ms-3 text-muted small d-none d-md-inline">| Polls IoT device every 2s</span>
         </div>
         
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="stat-card success">
-                <div class="stat-icon">
-                    <i class="fas fa-camera"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ 'Active' if image_loaded else 'Inactive' }}</h3>
-                    <p>Image Model</p>
-                    <small>CNN Classifier</small>
-                </div>
-            </div>
+        <div class="status-badge" id="connBadge">
+            <i class="fas fa-satellite-dish me-2"></i>
+            <span id="connText">Initializing...</span>
         </div>
     </div>
 
-    <!-- Detection Methods -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Detection Methods</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <a href="{{ url_for('pest_sensor_predict') }}" class="quick-action-card">
-                                <i class="fas fa-microchip fa-3x mb-3 text-primary"></i>
-                                <h5>Sensor-Based Detection</h5>
-                                <p class="text-muted">Use temperature, humidity, pressure, and light sensor data</p>
-                                <div class="mt-3">
-                                    <span class="badge bg-primary">5 Features</span>
-                                    <span class="badge bg-info ms-2">Real-time</span>
-                                </div>
-                                <span class="btn btn-outline-primary btn-sm mt-3">Try Now <i class="fas fa-arrow-right ms-1"></i></span>
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <a href="{{ url_for('pest_image_predict') }}" class="quick-action-card">
-                                <i class="fas fa-camera fa-3x mb-3 text-success"></i>
-                                <h5>Image-Based Detection</h5>
-                                <p class="text-muted">Upload pest images for CNN-based classification</p>
-                                <div class="mt-3">
-                                    <span class="badge bg-success">Multiple Classes</span>
-                                    <span class="badge bg-warning ms-2">Visual Results</span>
-                                </div>
-                                <span class="btn btn-outline-success btn-sm mt-3">Try Now <i class="fas fa-arrow-right ms-1"></i></span>
-                            </a>
-                        </div>
+    <!-- 3. Live Sensor Cards -->
+    <div class="row g-4 mb-4" id="sensorGrid">
+        
+        <!-- Temperature -->
+        <div class="col-md-6 col-xl-3">
+            <div class="sensor-card state-disabled" id="cardTemp">
+                <div class="sensor-header">
+                    <div class="d-flex align-items-center">
+                        <div class="sensor-icon icon-disabled me-3" id="iconTemp"><i class="fas fa-thermometer-half"></i></div>
+                        <span class="sensor-title mb-0">Air<br>Temperature</span>
                     </div>
                 </div>
+                <div class="sensor-value-wrap">
+                    <span class="sensor-value" id="valTemp">0.0</span><span class="sensor-unit">°C</span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-bar-animated" id="progTemp" style="width: 0%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                    <span>0°C</span><span>50°C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Humidity -->
+        <div class="col-md-6 col-xl-3">
+            <div class="sensor-card state-disabled" id="cardHum">
+                <div class="sensor-header">
+                    <div class="d-flex align-items-center">
+                        <div class="sensor-icon icon-disabled me-3" id="iconHum"><i class="fas fa-tint"></i></div>
+                        <span class="sensor-title mb-0">Air<br>Humidity</span>
+                    </div>
+                </div>
+                <div class="sensor-value-wrap">
+                    <span class="sensor-value" id="valHum">0.0</span><span class="sensor-unit">%</span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-bar-animated" id="progHum" style="width: 0%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                    <span>0%</span><span>100%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pressure -->
+        <div class="col-md-6 col-xl-3">
+            <div class="sensor-card state-disabled" id="cardPres">
+                <div class="sensor-header">
+                    <div class="d-flex align-items-center">
+                        <div class="sensor-icon icon-disabled me-3" id="iconPres"><i class="fas fa-tachometer-alt"></i></div>
+                        <span class="sensor-title mb-0">Barometric<br>Pressure</span>
+                    </div>
+                </div>
+                <div class="sensor-value-wrap">
+                    <span class="sensor-value" id="valPres">0.0</span><span class="sensor-unit">hPa</span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-bar-animated" id="progPres" style="width: 0%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                    <span>900</span><span>1100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Light -->
+        <div class="col-md-6 col-xl-3">
+            <div class="sensor-card state-disabled" id="cardLdr">
+                <div class="sensor-header">
+                    <div class="d-flex align-items-center">
+                        <div class="sensor-icon icon-disabled me-3" id="iconLdr"><i class="fas fa-sun"></i></div>
+                        <span class="sensor-title mb-0">Light<br>Intensity</span>
+                    </div>
+                </div>
+                <div class="sensor-value-wrap">
+                    <span class="sensor-value" id="valLdr">0</span><span class="sensor-unit" id="textLdr" style="font-weight: 700; color: var(--pest-warning); font-size: 1.2rem; margin-left: 0.5rem;"></span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-bar-animated" id="progLdr" style="width: 0%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                    <span>0</span><span>4000+</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+    <!-- 4. System Information & Guidelines -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="chart-card h-100" style="background: linear-gradient(to right, #ffffff, #f0fdf4); border-left: 4px solid var(--pest-primary);">
+                <div class="chart-title mb-2"><i class="fas fa-microscope text-primary me-2"></i>Outbreak Detection Accuracy</div>
+                <p class="text-muted mb-3" style="font-size: 0.95rem;">Our dual-engine AI relies on both localized IoT sensor data and computer vision to cross-reference potential paddy diseases. When sensors detect critical vulnerability thresholds, visual inspection is highly recommended.</p>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success me-2">IoT Reliability: 99.8%</span>
+                    <span class="badge bg-primary">AI Confidence: 94%+</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card h-100" style="background: linear-gradient(to right, #ffffff, #fffbeb); border-left: 4px solid var(--pest-warning);">
+                <div class="chart-title mb-2"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Risk Thresholds Overview</div>
+                <ul class="text-muted mb-0 ps-3" style="font-size: 0.95rem;">
+                    <li class="mb-1"><strong>Temperature over 33°C</strong> drastically accelerates insect breeding cycles.</li>
+                    <li class="mb-1"><strong>Humidity exceeding 85%</strong> acts as a catalyst for fungal blight and leaf spot.</li>
+                    <li><strong>Low Light Intensity</strong> indicates prolonged cloud cover, maximizing fungal risks.</li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <!-- Features -->
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
-                    <h5>Sensor Features</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-thermometer-half me-2 text-info"></i>Temperature</li>
-                        <li><i class="fas fa-tint me-2 text-info"></i>Humidity</li>
-                        <li><i class="fas fa-gauge-high me-2 text-info"></i>Pressure</li>
-                        <li><i class="fas fa-sun me-2 text-info"></i>Light Intensity</li>
-                        <li><i class="fas fa-calendar me-2 text-info"></i>Day of Year</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-robot fa-3x text-success mb-3"></i>
-                    <h5>AI Models</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-tree me-2 text-success"></i>Random Forest (Sensor)</li>
-                        <li><i class="fas fa-brain me-2 text-success"></i>CNN (Image)</li>
-                        <li><i class="fas fa-chart-pie me-2 text-success"></i>95%+ Accuracy</li>
-                        <li><i class="fas fa-clock me-2 text-success"></i>Real-time Detection</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-clipboard-list fa-3x text-warning mb-3"></i>
-                    <h5>Pest Management</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-check-circle me-2 text-warning"></i>Pest Identification</li>
-                        <li><i class="fas fa-check-circle me-2 text-warning"></i>Risk Assessment</li>
-                        <li><i class="fas fa-check-circle me-2 text-warning"></i>Treatment Recommendations</li>
-                        <li><i class="fas fa-check-circle me-2 text-warning"></i>Prevention Tips</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+    <hr class="my-5" style="opacity: 0.1;">
 
-    
+    <!-- 5. Quick Actions Section -->
+    <h3 class="fw-bold mb-4 text-dark"><i class="fas fa-rocket text-primary me-2"></i>Quick Actions</h3>
+    <div class="row g-4 mb-4">
+        
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ url_for('pest_sensor_predict') }}" class="action-card">
+                <div class="action-icon"><i class="fas fa-broadcast-tower"></i></div>
+                <h4 class="action-title">Sensor Prediction</h4>
+                <p class="text-muted mb-0 small">Use live IoT sensor data to immediately predict pesticide risk limits.</p>
+            </a>
+        </div>
+        
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ url_for('pest_predict') }}" class="action-card">
+                <div class="action-icon"><i class="fas fa-keyboard"></i></div>
+                <h4 class="action-title">Manual Prediction</h4>
+                <p class="text-muted mb-0 small">Enter environmental metrics by hand to forecast outbreak scenarios.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ url_for('pest_image_predict') }}" class="action-card">
+                <div class="action-icon"><i class="fas fa-spider"></i></div>
+                <h4 class="action-title">Pest Detection</h4>
+                <p class="text-muted mb-0 small">Upload field photos to instantly identify insect pests via AI.</p>
+            </a>
+        </div>
+        
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ url_for('disease_detection') }}" class="action-card">
+                <div class="action-icon"><i class="fas fa-leaf"></i></div>
+                <h4 class="action-title">Disease Defense</h4>
+                <p class="text-muted mb-0 small">Scan paddy crops for blights and infections using computer vision.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ url_for('pest_history') }}" class="action-card">
+                <div class="action-icon"><i class="fas fa-history"></i></div>
+                <h4 class="action-title">Prediction History</h4>
+                <p class="text-muted mb-0 small">Review saved pest risk predictions from manual and sensor-based analysis.</p>
+            </a>
+        </div>
+
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-function quickDemo() {
-    $('#demoResult').slideDown();
-    setTimeout(() => {
-        $('#demoResult').slideUp();
-    }, 5000);
-}
+    const toggle = document.getElementById('sensorToggle');
+    const badge = document.getElementById('connBadge');
+    const badgeText = document.getElementById('connText');
+    let pollInterval = null;
+    let isPollingOptionsEnabled = true;
+
+    // Determine Status Colors
+    function applyState(domId, val, thresholds) {
+        const card = document.getElementById('card' + domId);
+        const prog = document.getElementById('prog' + domId);
+        
+        card.className = "sensor-card"; // reset
+        
+        // Progress width calc
+        let pct = ((val - thresholds.min) / (thresholds.max - thresholds.min)) * 100;
+        pct = Math.max(0, Math.min(100, pct));
+        prog.style.width = pct + '%';
+
+        // Apply state
+        if(val >= thresholds.crit) card.classList.add('state-critical');
+        else if(val >= thresholds.warn) card.classList.add('state-warning');
+        else card.classList.add('state-normal');
+    }
+
+    function zeroOutDashboard() {
+        ['Temp', 'Hum', 'Pres', 'Ldr'].forEach(k => {
+            const card = document.getElementById('card' + k);
+            card.className = "sensor-card state-disabled";
+            document.getElementById('icon' + k).className = 'sensor-icon icon-disabled';
+            document.getElementById('val' + k).textContent = '0.0';
+            document.getElementById('prog' + k).style.width = '0%';
+        });
+        document.getElementById('valLdr').textContent = '0';
+        document.getElementById('textLdr').textContent = '';
+    }
+
+    function updateSensorUI(data) {
+        if (!isPollingOptionsEnabled) return;
+
+        if (data && data.success && data.sensor && data.sensor.connected) {
+            const s = data.sensor;
+            
+            badge.className = 'status-badge connected';
+            badgeText.textContent = 'Sensor Connected – Live Data Flowing';
+
+            // Icons
+            document.getElementById('iconTemp').className = 'sensor-icon icon-temp';
+            document.getElementById('iconHum').className = 'sensor-icon icon-hum';
+            document.getElementById('iconPres').className = 'sensor-icon icon-pres';
+            document.getElementById('iconLdr').className = 'sensor-icon icon-ldr';
+
+            // Values
+            document.getElementById('valTemp').textContent = s.temperature !== null ? s.temperature.toFixed(1) : '0.0';
+            document.getElementById('valHum').textContent = s.humidity !== null ? s.humidity.toFixed(1) : '0.0';
+            document.getElementById('valPres').textContent = s.pressure !== null ? s.pressure.toFixed(1) : '0.0';
+            document.getElementById('valLdr').textContent = s.ldr !== null ? Math.round(s.ldr) : '0';
+            document.getElementById('textLdr').textContent = s.ldr_text ? '(' + s.ldr_text + ')' : '';
+
+            // States & Progress Bars
+            if(s.temperature !== null) applyState('Temp', s.temperature, {min: 0, max: 50, warn: 33, crit: 40});
+            if(s.humidity !== null) applyState('Hum', s.humidity, {min: 0, max: 100, warn: 85, crit: 95});
+            if(s.pressure !== null) applyState('Pres', s.pressure, {min: 900, max: 1100, warn: 1050, crit: 1080});
+            if(s.ldr !== null) applyState('Ldr', s.ldr, {min: 0, max: 100000, warn: 80000, crit: 95000});
+
+
+
+        } else {
+            badge.className = 'status-badge disconnected';
+            badgeText.textContent = 'Sensor Disconnected – Please connect your pest monitoring device.';
+            zeroOutDashboard();
+        }
+    }
+
+    function fetchSensorData() {
+        if (!isPollingOptionsEnabled) return;
+        fetch('/api/pest-sensor-data')
+            .then(res => res.json())
+            .then(updateSensorUI)
+            .catch(err => {
+                console.error(err);
+                updateSensorUI(null);
+            });
+    }
+
+    // Toggle Behavior
+    toggle.addEventListener('change', function(e) {
+        if(e.target.checked) {
+            isPollingOptionsEnabled = true;
+            badge.className = 'status-badge';
+            badgeText.textContent = 'Checking connection...';
+            fetchSensorData();
+            pollInterval = setInterval(fetchSensorData, 2000);
+        } else {
+            isPollingOptionsEnabled = false;
+            clearInterval(pollInterval);
+            badge.className = 'status-badge';
+            badgeText.textContent = 'Sensor Mode Disabled (Manual Only)';
+            zeroOutDashboard();
+        }
+    });
+
+    // Init
+    fetchSensorData();
+    pollInterval = setInterval(fetchSensorData, 2000);
 </script>
 {% endblock %}

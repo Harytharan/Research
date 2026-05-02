@@ -1,167 +1,474 @@
 {% extends "base.html" %}
 
-{% block title %}Sensor Detection - Pest Detection{% endblock %}
+{% block title %}Sensor Prediction - Pest Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --pest-primary: #10b981;
+        --pest-primary-dark: #059669;
+        --pest-primary-light: #d1fae5;
+        --pest-secondary: #84cc16;
+        --pest-warning: #f59e0b;
+        --pest-danger: #ef4444;
+        --pest-dark: #1f2937;
+        --pest-bg: #f9fafb;
+        --pest-card-bg: #ffffff;
+        --pest-text: #374151;
+        --pest-text-light: #6b7280;
+        --pest-border: #e5e7eb;
+    }
+
+    body {
+        background-color: var(--pest-bg);
+        color: var(--pest-text);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* ─── Header ────────────────────────────────────────────── */
+    .page-header {
+        background: linear-gradient(135deg, var(--pest-dark), #374151);
+        color: white;
+        padding: 2.5rem 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(31, 41, 55, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; width: 100%; height: 100%;
+        background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA1IiBkPSJNMzkuOTgzIDE2YTE5Ljk5IDE5Ljk5IDAgMCAwLTE0LjEzNiA1Ljg1M0w1LjgwMiAzOS45MTVhMS45OSAxLjk5IDAgMCAwIDAgMi44MTdsMjAuMDQ1IDE4LjA2MkExOS45OSAxOS45OSAwIDAgMCAzOS45ODMgNjRhMTkuOTkgMTkuOTkgMCAwIDAgMTQuMTM2LTUuODUzTDU0LjExOSA1NC40NUEzOS45MDYgMzkuOTA2IDAgMCAxIDM5Ljk4MyA4MGMtMjIuMDkxIDAtNDAtMTcuOTA5LTQwLTQwcS4wMDItNS4zNjYgMS40NDUtMTAuNDk1TDIxLjE3MSAzOC4zMzNhMjAuMDMgMjAuMDMgMCAwIDAgMTguODEyIDIxLjY2N2ExOS45OSAxOS45OSAwIDAgMCAxNC4xMzYtNS44NTNWMTZ6Ii8+Cjwvc3ZnPg==') repeat;
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    /* ─── Controls ──────────────────────────────────────────── */
+    .controls-bar {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--pest-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-switch .form-check-input {
+        width: 3.5rem;
+        height: 1.75rem;
+        cursor: pointer;
+    }
+    
+    .form-switch .form-check-input:checked {
+        background-color: var(--pest-primary);
+        border-color: var(--pest-primary);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: var(--pest-bg);
+        border: 1px solid var(--pest-border);
+        color: var(--pest-text-light);
+        transition: all 0.3s ease;
+    }
+
+    .status-badge.connected {
+        background: var(--pest-primary-light);
+        color: var(--pest-primary-dark);
+        border-color: var(--pest-primary);
+    }
+
+    .status-badge.disconnected {
+        background: #fee2e2;
+        color: var(--pest-danger);
+        border-color: var(--pest-danger);
+        animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* ─── Sensor Cards ──────────────────────────────────────── */
+    .sensor-card {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--pest-border);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        position: relative;
+    }
+
+    .sensor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .sensor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .sensor-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .icon-temp { background: rgba(239, 68, 68, 0.1); color: var(--pest-danger); }
+    .icon-hum { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .icon-pres { background: rgba(16, 185, 129, 0.1); color: var(--pest-primary); }
+    .icon-ldr { background: rgba(245, 158, 11, 0.1); color: var(--pest-warning); }
+    .icon-disabled { background: var(--pest-bg); color: var(--pest-text-light); }
+
+    .sensor-value-wrap {
+        margin-bottom: 1rem;
+    }
+
+    .sensor-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--pest-dark);
+        line-height: 1;
+    }
+
+    .sensor-unit {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--pest-text-light);
+        margin-left: 0.25rem;
+    }
+
+    .sensor-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--pest-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .progress-wrap {
+        height: 6px;
+        background: var(--pest-bg);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar-animated {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+        width: 0%;
+        background-color: var(--pest-text-light);
+    }
+
+    .state-normal .progress-bar-animated { background-color: var(--pest-primary); }
+    .state-warning .progress-bar-animated { background-color: var(--pest-warning); }
+    .state-critical .progress-bar-animated { background-color: var(--pest-danger); }
+
+    .state-normal .sensor-value { color: var(--pest-primary); }
+    .state-warning .sensor-value { color: var(--pest-warning); }
+    .state-critical .sensor-value { color: var(--pest-danger); }
+    .state-disabled .sensor-value { color: var(--pest-text-light); }
+
+    .btn-predict {
+        background: linear-gradient(to right, var(--pest-primary-dark), var(--pest-primary));
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        width: 100%;
+    }
+
+    .btn-predict:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+    
+    .btn-predict:disabled {
+        background: #d1d5db;
+        box-shadow: none;
+        transform: none;
+        cursor: not-allowed;
+        color: #6b7280;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Pest Detection</h2>
-                <p class="mb-0">Detect paddy pests using environmental sensor data</p>
-            </div>
+<div class="container-fluid py-4">
+    
+    <!-- 1. Header Section -->
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap">
+        <div style="z-index: 2;">
+            <h2 class="display-6 fw-bold mb-2">
+                <i class="fas fa-broadcast-tower me-3"></i>Live Sensor Prediction
+            </h2>
+            <p class="lead mb-0 opacity-90">Capture live IoT data directly into the AI to assess outbreak risks instantly.</p>
+        </div>
+    </div>
 
-            <div class="form-card">
-                <form method="POST" action="{{ url_for('pest_sensor_predict') }}" id="sensorForm">
-                    <h5 class="mb-3"><i class="fas fa-microchip text-primary me-2"></i>Environmental Sensors</h5>
+    <!-- 2. Controls & Status -->
+    <div class="controls-bar">
+        <div class="d-flex align-items-center">
+            <div class="form-check form-switch fs-4 mb-0">
+                <input class="form-check-input" type="checkbox" id="sensorToggle" checked>
+                <label class="form-check-label toggle-label ms-2 font-weight-bold" for="sensorToggle">Live Sensor Mode</label>
+            </div>
+            <span class="ms-3 text-muted small d-none d-md-inline">| Syncs values to AI model</span>
+        </div>
+        
+        <div class="status-badge" id="connBadge">
+            <i class="fas fa-satellite-dish me-2"></i>
+            <span id="connText">Initializing...</span>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- 3. Live Sensor Grid -->
+        <div class="col-lg-8">
+            <div class="row g-4">
+                
+                <!-- Temperature -->
+                <div class="col-md-6">
+                    <div class="sensor-card state-disabled" id="cardTemp">
+                        <div class="sensor-header">
+                            <span class="sensor-title">Temperature</span>
+                            <div class="sensor-icon icon-disabled" id="iconTemp"><i class="fas fa-thermometer-half"></i></div>
+                        </div>
+                        <div class="sensor-value-wrap">
+                            <span class="sensor-value" id="valTemp">0.0</span><span class="sensor-unit">°C</span>
+                        </div>
+                        <div class="progress-wrap">
+                            <div class="progress-bar-animated" id="progTemp" style="width: 0%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span>0°C</span><span>50°C</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Humidity -->
+                <div class="col-md-6">
+                    <div class="sensor-card state-disabled" id="cardHum">
+                        <div class="sensor-header">
+                            <span class="sensor-title">Humidity (Gen)</span>
+                            <div class="sensor-icon icon-disabled" id="iconHum"><i class="fas fa-tint"></i></div>
+                        </div>
+                        <div class="sensor-value-wrap">
+                            <span class="sensor-value" id="valHum">0.0</span><span class="sensor-unit">%</span>
+                        </div>
+                        <div class="progress-wrap">
+                            <div class="progress-bar-animated" id="progHum" style="width: 0%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span>0%</span><span>100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pressure -->
+                <div class="col-md-6">
+                    <div class="sensor-card state-disabled" id="cardPres">
+                        <div class="sensor-header">
+                            <span class="sensor-title">Pressure</span>
+                            <div class="sensor-icon icon-disabled" id="iconPres"><i class="fas fa-tachometer-alt"></i></div>
+                        </div>
+                        <div class="sensor-value-wrap">
+                            <span class="sensor-value" id="valPres">0.0</span><span class="sensor-unit">hPa</span>
+                        </div>
+                        <div class="progress-wrap">
+                            <div class="progress-bar-animated" id="progPres" style="width: 0%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span>900</span><span>1100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Light (LDR) -->
+                <div class="col-md-6">
+                    <div class="sensor-card state-disabled" id="cardLdr">
+                        <div class="sensor-header">
+                            <span class="sensor-title">Light Intensity</span>
+                            <div class="sensor-icon icon-disabled" id="iconLdr"><i class="fas fa-sun"></i></div>
+                        </div>
+                        <div class="sensor-value-wrap">
+                            <span class="sensor-value" id="valLdr">0</span><span class="sensor-unit">lux</span>
+                        </div>
+                        <div class="progress-wrap">
+                            <div class="progress-bar-animated" id="progLdr" style="width: 0%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span>0</span><span>100k+</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Prediction Action -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-0" style="background: var(--pest-card-bg); border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                <div class="card-body p-4 d-flex flex-column justify-content-center text-center">
+                    <div class="mb-4">
+                        <div style="width: 80px; height: 80px; background: var(--pest-primary-light); color: var(--pest-primary-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto;">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                    </div>
                     
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
-                                <div class="input-group">
-                                    <input type="number" name="temperature" id="temperature" 
-                                           class="form-control" step="0.1" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('temperature')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 20-40°C</small>
-                            </div>
-                        </div>
+                    <h4 class="fw-bold text-dark mb-3">AI Risk Assessment</h4>
+                    <p class="text-muted mb-4 small">
+                        The AI relies on stable realtime metrics. Once the live data link is established, run the projection.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('pest_sensor_predict') }}">
+                        <input type="hidden" name="temperature" id="inputTemp" required>
+                        <input type="hidden" name="humidity" id="inputHum" required>
+                        <input type="hidden" name="pressure" id="inputPres" required>
+                        <input type="hidden" name="ldr" id="inputLdr" required>
                         
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
-                                <div class="input-group">
-                                    <input type="number" name="humidity" id="humidity" 
-                                           class="form-control" step="0.1" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('humidity')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 60-100%</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-gauge-high"></i> Pressure (hPa)</label>
-                                <div class="input-group">
-                                    <input type="number" name="pressure" id="pressure" 
-                                           class="form-control" step="0.1" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('pressure')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 980-1030 hPa</small>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-sun"></i> Light Intensity (lux)</label>
-                                <div class="input-group">
-                                    <input type="number" name="light" id="light" 
-                                           class="form-control" step="100" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('light')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 0-100000 lux</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label><i class="fas fa-calendar"></i> Day of Year</label>
-                                <input type="number" name="dayofyear" class="form-control" 
-                                       min="1" max="365" value="{{ current_day }}" required>
-                                <small class="text-muted">Current day: {{ current_day }}</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="sensorWarnings" class="mb-3"></div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">
-                                <i class="fas fa-search me-2"></i>Detect Pest
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                        <button type="submit" class="btn btn-predict" id="btnSubmit" disabled>
+                            <i class="fas fa-magic me-2"></i>Run Prediction Flow
+                        </button>
+                    </form>
+                </div>
             </div>
-
-            <!-- Sensor Tips -->
-          
-            <!-- Batch Upload -->
-            
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-function simulateSensor(sensor) {
-    let value;
-    switch(sensor) {
-        case 'temperature':
-            value = (20 + Math.random() * 20).toFixed(1);
-            break;
-        case 'humidity':
-            value = (60 + Math.random() * 40).toFixed(1);
-            break;
-        case 'pressure':
-            value = (980 + Math.random() * 50).toFixed(1);
-            break;
-        case 'light':
-            value = Math.floor(10000 + Math.random() * 90000);
-            break;
-    }
-    document.getElementById(sensor).value = value;
-    showToast(`${sensor} reading simulated: ${value}`, 'info');
-}
+    const toggle = document.getElementById('sensorToggle');
+    const badge = document.getElementById('connBadge');
+    const badgeText = document.getElementById('connText');
+    const btnSubmit = document.getElementById('btnSubmit');
+    let pollInterval = null;
+    let isPollingOptionsEnabled = true;
 
-function uploadBatch() {
-    const file = document.getElementById('batchFile').files[0];
-    if (!file) {
-        showToast('Please select a file', 'warning');
-        return;
+    function applyState(domId, val, thresholds) {
+        const card = document.getElementById('card' + domId);
+        const prog = document.getElementById('prog' + domId);
+        
+        card.className = "sensor-card"; // reset base class
+        
+        let pct = ((val - thresholds.min) / (thresholds.max - thresholds.min)) * 100;
+        pct = Math.max(0, Math.min(100, pct));
+        prog.style.width = pct + '%';
+
+        if(val >= thresholds.crit) card.classList.add('state-critical');
+        else if(val >= thresholds.warn) card.classList.add('state-warning');
+        else card.classList.add('state-normal');
     }
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    showLoading();
-    
-    fetch('/batch-predict', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            let html = '<div class="alert alert-success"><h6>Batch Results:</h6><ul>';
-            data.results.forEach(r => {
-                html += `<li>Row ${r.row_index}: ${r.predicted_pest} (${(r.probability*100).toFixed(1)}%)</li>`;
-            });
-            html += '</ul></div>';
-            document.getElementById('batchResults').innerHTML = html;
-            document.getElementById('batchResults').style.display = 'block';
+
+    function zeroOutDashboard() {
+        ['Temp', 'Hum', 'Pres', 'Ldr'].forEach(k => {
+            document.getElementById('card' + k).className = "sensor-card state-disabled";
+            document.getElementById('icon' + k).className = 'sensor-icon icon-disabled';
+            document.getElementById('val' + k).textContent = '0.0';
+            document.getElementById('prog' + k).style.width = '0%';
+            document.getElementById('input' + k).value = '';
+        });
+        document.getElementById('valLdr').textContent = '0';
+        btnSubmit.disabled = true;
+    }
+
+    function updateSensorUI(data) {
+        if (!isPollingOptionsEnabled) return;
+
+        if (data && data.success && data.sensor && data.sensor.connected) {
+            const s = data.sensor;
+            
+            badge.className = 'status-badge connected';
+            badgeText.textContent = 'Sensor Connected – Live Data Indexed';
+
+            document.getElementById('iconTemp').className = 'sensor-icon icon-temp';
+            document.getElementById('iconHum').className = 'sensor-icon icon-hum';
+            document.getElementById('iconPres').className = 'sensor-icon icon-pres';
+            document.getElementById('iconLdr').className = 'sensor-icon icon-ldr';
+
+            document.getElementById('valTemp').textContent = s.temperature !== null ? s.temperature.toFixed(1) : '0.0';
+            document.getElementById('valHum').textContent = s.humidity !== null ? s.humidity.toFixed(1) : '0.0';
+            document.getElementById('valPres').textContent = s.pressure !== null ? s.pressure.toFixed(1) : '0.0';
+            document.getElementById('valLdr').textContent = s.ldr !== null ? Math.round(s.ldr) : '0';
+
+            if(s.temperature !== null) applyState('Temp', s.temperature, {min: 0, max: 50, warn: 33, crit: 40});
+            if(s.humidity !== null) applyState('Hum', s.humidity, {min: 0, max: 100, warn: 85, crit: 95});
+            if(s.pressure !== null) applyState('Pres', s.pressure, {min: 900, max: 1100, warn: 1050, crit: 1080});
+            if(s.ldr !== null) applyState('Ldr', s.ldr, {min: 0, max: 100000, warn: 80000, crit: 95000});
+
+            // Set hidden inputs and enable prediction button
+            document.getElementById('inputTemp').value = s.temperature;
+            document.getElementById('inputHum').value = s.humidity;
+            document.getElementById('inputPres').value = s.pressure;
+            document.getElementById('inputLdr').value = s.ldr;
+            btnSubmit.disabled = false;
+
         } else {
-            showToast('Error: ' + data.error, 'danger');
+            badge.className = 'status-badge disconnected';
+            badgeText.textContent = 'Sensor Disconnected – Device Required';
+            zeroOutDashboard();
         }
-    })
-    .catch(error => {
-        hideLoading();
-        showToast('Error uploading file', 'danger');
+    }
+
+    function fetchSensorData() {
+        if (!isPollingOptionsEnabled) return;
+        fetch('/api/pest-sensor-data')
+            .then(res => res.json())
+            .then(updateSensorUI)
+            .catch(err => {
+                console.error(err);
+                updateSensorUI(null);
+            });
+    }
+
+    toggle.addEventListener('change', function(e) {
+        if(e.target.checked) {
+            isPollingOptionsEnabled = true;
+            badge.className = 'status-badge';
+            badgeText.textContent = 'Checking connection...';
+            btnSubmit.disabled = true;
+            fetchSensorData();
+            pollInterval = setInterval(fetchSensorData, 2000);
+        } else {
+            isPollingOptionsEnabled = false;
+            clearInterval(pollInterval);
+            badge.className = 'status-badge';
+            badgeText.textContent = 'Sensor Mode Disabled';
+            zeroOutDashboard();
+        }
     });
-}
+
+    fetchSensorData();
+    pollInterval = setInterval(fetchSensorData, 2000);
 </script>
 {% endblock %}

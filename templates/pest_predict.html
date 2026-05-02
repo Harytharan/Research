@@ -1,167 +1,214 @@
 {% extends "base.html" %}
 
-{% block title %}Sensor Detection - Pest Detection{% endblock %}
+{% block title %}Manual Prediction - Pest Outbreak Module{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --pest-primary: #10b981;
+        --pest-primary-dark: #059669;
+        --pest-primary-light: #d1fae5;
+        --pest-secondary: #84cc16;
+        --pest-warning: #f59e0b;
+        --pest-danger: #ef4444;
+        --pest-dark: #1f2937;
+        --pest-bg: #f9fafb;
+        --pest-card-bg: #ffffff;
+        --pest-text: #374151;
+        --pest-text-light: #6b7280;
+        --pest-border: #e5e7eb;
+    }
+
+    body {
+        background-color: var(--pest-bg);
+        color: var(--pest-text);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--pest-dark), #374151);
+        color: white;
+        padding: 2.5rem 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(31, 41, 55, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; width: 100%; height: 100%;
+        background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA1IiBkPSJNMzkuOTgzIDE2YTE5Ljk5IDE5Ljk5IDAgMCAwLTE0LjEzNiA1Ljg1M0w1LjgwMiAzOS45MTVhMS45OSAxLjk5IDAgMCAwIDAgMi44MTdsMjAuMDQ1IDE4LjA2MkExOS45OSAxOS45OSAwIDAgMCAzOS45ODMgNjRhMTkuOTkgMTkuOTkgMCAwIDAgMTQuMTM2LTUuODUzTDU0LjExOSA1NC40NUEzOS45MDYgMzkuOTA2IDAgMCAxIDM5Ljk4MyA4MGMtMjIuMDkxIDAtNDAtMTcuOTA5LTQwLTQwcS4wMDItNS4zNjYgMS40NDUtMTAuNDk1TDIxLjE3MSAzOC4zMzNhMjAuMDMgMjAuMDMgMCAwIDAgMTguODEyIDIxLjY2N2ExOS45OSAxOS45OSAwIDAgMCAxNC4xMzYtNS44NTNWMTZ6Ii8+Cjwvc3ZnPg==') repeat;
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    .form-card {
+        background: var(--pest-card-bg);
+        border-radius: 1rem;
+        padding: 2.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--pest-border);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--pest-dark);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .input-group-text {
+        background-color: var(--pest-bg);
+        border-color: var(--pest-border);
+        color: var(--pest-text-light);
+        font-weight: 500;
+        border-radius: 0.5rem 0 0 0.5rem;
+    }
+
+    .form-control {
+        border-color: var(--pest-border);
+        padding: 0.75rem 1rem;
+        border-radius: 0 0.5rem 0.5rem 0;
+    }
+
+    .form-control:focus {
+        border-color: var(--pest-primary);
+        box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-predict {
+        background: linear-gradient(to right, var(--pest-primary-dark), var(--pest-primary));
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-predict:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+
+    .loader-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.9);
+        z-index: 20;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="page-header d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h2 class="display-6 fw-bold mb-2">
+                        <i class="fas fa-edit me-3"></i>Manual Risk Entry
+                    </h2>
+                    <p class="lead mb-0 opacity-75">Input historical or hypotheticals environmental data manually to predict pest outbreaks without live sensors.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-lg-8 mx-auto">
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Pest Detection</h2>
-                <p class="mb-0">Detect paddy pests using environmental sensor data</p>
-            </div>
+            
+            <div class="form-card position-relative">
+                
+                <div class="loader-overlay" id="loaderOverlay">
+                    <div class="spinner-border text-dark mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <h5 class="fw-bold text-dark">Analyzing Manual Data...</h5>
+                    <p class="text-muted small">Running inference via Random Forest Model.</p>
+                </div>
 
-            <div class="form-card">
-                <form method="POST" action="{{ url_for('pest_sensor_predict') }}" id="sensorForm">
-                    <h5 class="mb-3"><i class="fas fa-microchip text-primary me-2"></i>Environmental Sensors</h5>
+                <form method="POST" action="{{ url_for('pest_predict') }}" id="manualForm">
+                    <h4 class="fw-bold text-dark mb-4"><i class="fas fa-sliders-h text-secondary me-2"></i>Environmental Variables</h4>
                     
-                    <div class="row mb-4">
+                    <div class="row g-4 mb-4">
+                        
+                        <!-- Temperature -->
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
-                                <div class="input-group">
-                                    <input type="number" name="temperature" id="temperature" 
-                                           class="form-control" step="0.1" value="31.2" required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('temperature')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 20-40°C</small>
+                            <label class="form-label"><i class="fas fa-thermometer-half text-danger"></i> Temperature</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-temperature-high"></i></span>
+                                <input type="number" name="temperature" class="form-control" step="0.1" min="15" max="45" value="28.5" required>
+                                <span class="input-group-text border-start-0 bg-white">°C</span>
                             </div>
+                            <small class="text-muted mt-1 d-block">Typ. Range: 20°C - 35°C</small>
                         </div>
                         
+                        <!-- Humidity -->
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
-                                <div class="input-group">
-                                    <input type="number" name="humidity" id="humidity" 
-                                           class="form-control" step="0.1" value="86.5" required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('humidity')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 60-100%</small>
+                            <label class="form-label"><i class="fas fa-tint" style="color: #3b82f6;"></i> Relative Humidity</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-water"></i></span>
+                                <input type="number" name="humidity" class="form-control" step="0.1" min="30" max="100" value="75.0" required>
+                                <span class="input-group-text border-start-0 bg-white">%</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-gauge-high"></i> Pressure (hPa)</label>
-                                <div class="input-group">
-                                    <input type="number" name="pressure" id="pressure" 
-                                           class="form-control" step="0.1" value="1006.3" required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('pressure')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 980-1030 hPa</small>
-                            </div>
+                            <small class="text-muted mt-1 d-block">Typ. Range: 50% - 90%</small>
                         </div>
                         
+                        <!-- Pressure -->
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-sun"></i> Light Intensity (lux)</label>
-                                <div class="input-group">
-                                    <input type="number" name="light" id="light" 
-                                           class="form-control" step="100" value="52300" required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="simulateSensor('light')">
-                                        <i class="fas fa-sync"></i> Simulate
-                                    </button>
-                                </div>
-                                <small class="text-muted">Range: 0-100000 lux</small>
+                            <label class="form-label"><i class="fas fa-tachometer-alt" style="color: var(--pest-primary);"></i> Atmospheric Pressure</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-compress-arrows-alt"></i></span>
+                                <input type="number" name="pressure" class="form-control" step="0.1" min="900" max="1100" value="1012.5" required>
+                                <span class="input-group-text border-start-0 bg-white">hPa</span>
                             </div>
+                            <small class="text-muted mt-1 d-block">Typ. Range: 980 - 1025 hPa</small>
                         </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label><i class="fas fa-calendar"></i> Day of Year</label>
-                                <input type="number" name="dayofyear" class="form-control" 
-                                       min="1" max="365" value="{{ current_day }}" required>
-                                <small class="text-muted">Current day: {{ current_day }}</small>
+                        
+                        <!-- Light -->
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-sun text-warning"></i> Light Intensity</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lightbulb"></i></span>
+                                <input type="number" name="light" class="form-control" step="10" min="0" max="120000" value="45000" required>
+                                <span class="input-group-text border-start-0 bg-white">lux</span>
                             </div>
+                            <small class="text-muted mt-1 d-block">Typ. Range: 10k - 100k lux</small>
                         </div>
+
                     </div>
 
-                    <div id="sensorWarnings" class="mb-3"></div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">
-                                <i class="fas fa-search me-2"></i>Detect Pest
-                            </button>
-                        </div>
-                    </div>
+                    <button type="submit" class="btn btn-predict w-100 fs-5" id="submitBtn">
+                        <i class="fas fa-calculator me-2"></i> Predict Outbreak Risk
+                    </button>
+                    
                 </form>
             </div>
-
-            <!-- Sensor Tips -->
-          
-            <!-- Batch Upload -->
             
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-function simulateSensor(sensor) {
-    let value;
-    switch(sensor) {
-        case 'temperature':
-            value = (20 + Math.random() * 20).toFixed(1);
-            break;
-        case 'humidity':
-            value = (60 + Math.random() * 40).toFixed(1);
-            break;
-        case 'pressure':
-            value = (980 + Math.random() * 50).toFixed(1);
-            break;
-        case 'light':
-            value = Math.floor(10000 + Math.random() * 90000);
-            break;
-    }
-    document.getElementById(sensor).value = value;
-    showToast(`${sensor} reading simulated: ${value}`, 'info');
-}
-
-function uploadBatch() {
-    const file = document.getElementById('batchFile').files[0];
-    if (!file) {
-        showToast('Please select a file', 'warning');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    showLoading();
-    
-    fetch('/batch-predict', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            let html = '<div class="alert alert-success"><h6>Batch Results:</h6><ul>';
-            data.results.forEach(r => {
-                html += `<li>Row ${r.row_index}: ${r.predicted_pest} (${(r.probability*100).toFixed(1)}%)</li>`;
-            });
-            html += '</ul></div>';
-            document.getElementById('batchResults').innerHTML = html;
-            document.getElementById('batchResults').style.display = 'block';
-        } else {
-            showToast('Error: ' + data.error, 'danger');
-        }
-    })
-    .catch(error => {
-        hideLoading();
-        showToast('Error uploading file', 'danger');
+    document.getElementById('manualForm').addEventListener('submit', function() {
+        document.getElementById('loaderOverlay').style.display = 'flex';
+        document.getElementById('submitBtn').disabled = true;
     });
-}
 </script>
 {% endblock %}

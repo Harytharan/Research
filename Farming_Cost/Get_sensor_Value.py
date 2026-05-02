@@ -5,7 +5,7 @@ import traceback
 import sys
 
 class SerialMonitor:
-    def __init__(self, port="COM3", baudrate=115200):
+    def __init__(self, port="COM7", baudrate=115200):
         self.port = port
         self.baudrate = baudrate
         self.ser = None

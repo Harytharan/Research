@@ -2,13 +2,509 @@
 
 {% block title %}Prediction Results - Paddy Predictor{% endblock %}
 
+{% block extra_css %}
+<style>
+    .results-shell {
+        --result-ink: #14312b;
+        --result-muted: #5d746e;
+        --result-line: rgba(20, 49, 43, 0.10);
+        --result-cream: #f7f5ee;
+        --result-moss: #dfead4;
+        --result-leaf: #2f7d59;
+        --result-gold: #c78a2c;
+        --result-berry: #8a3f4d;
+        --result-sky: #d7edf3;
+    }
+
+    .results-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        padding: 32px;
+        background:
+            radial-gradient(circle at top right, rgba(255, 220, 160, 0.35), transparent 24%),
+            radial-gradient(circle at left bottom, rgba(175, 214, 192, 0.5), transparent 28%),
+            linear-gradient(135deg, #183b34 0%, #245a49 52%, #4d8666 100%);
+        box-shadow: 0 24px 60px rgba(26, 59, 52, 0.22);
+    }
+
+    .results-hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -80px -90px auto;
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        filter: blur(4px);
+    }
+
+    .results-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .results-hero h2 {
+        font-size: clamp(2rem, 3vw, 3rem);
+        line-height: 1.05;
+        margin-bottom: 10px;
+        color: #fff;
+    }
+
+    .results-hero p {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 1rem;
+        max-width: 640px;
+    }
+
+    .hero-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+    }
+
+    .hero-meta-card {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-meta-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 6px;
+    }
+
+    .hero-meta-value {
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .metric-panel {
+        position: relative;
+        overflow: hidden;
+        min-height: 100%;
+        border-radius: 24px;
+        padding: 22px;
+        border: 1px solid var(--result-line);
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,245,238,0.96));
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+        transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .metric-panel:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 22px 40px rgba(15, 23, 42, 0.12);
+    }
+
+    .metric-panel::before {
+        content: "";
+        position: absolute;
+        top: -20px;
+        right: -12px;
+        width: 92px;
+        height: 92px;
+        border-radius: 50%;
+        opacity: 0.18;
+    }
+
+    .metric-panel.price::before { background: #2f7d59; }
+    .metric-panel.demand::before { background: #c78a2c; }
+    .metric-panel.market::before { background: #4a90a4; }
+    .metric-panel.volume::before { background: #8a3f4d; }
+
+    .metric-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .metric-badge {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #fff;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+
+    .metric-badge.price { background: linear-gradient(135deg, #2f7d59, #67af85); }
+    .metric-badge.demand { background: linear-gradient(135deg, #c78a2c, #dfb15a); }
+    .metric-badge.market { background: linear-gradient(135deg, #47849e, #77b5c8); }
+    .metric-badge.volume { background: linear-gradient(135deg, #8a3f4d, #b76d78); }
+
+    .metric-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(20, 49, 43, 0.06);
+        color: var(--result-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .metric-panel h3 {
+        margin: 0 0 8px;
+        color: var(--result-ink);
+        font-size: 1.9rem;
+        line-height: 1.05;
+    }
+
+    .metric-panel p {
+        margin: 0;
+        color: var(--result-muted);
+        font-weight: 600;
+    }
+
+    .metric-panel small {
+        display: block;
+        margin-top: 12px;
+        color: #70847e;
+        font-size: 0.83rem;
+    }
+
+    .recommendation-panel {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #fffdf7 0%, #f4efe2 100%);
+        border: 1px solid rgba(90, 73, 31, 0.12);
+        box-shadow: 0 22px 48px rgba(42, 35, 11, 0.10);
+    }
+
+    .recommendation-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(47, 125, 89, 0.05), transparent 34%, rgba(199, 138, 44, 0.06));
+        pointer-events: none;
+    }
+
+    .recommendation-side {
+        padding: 30px;
+        color: #fff;
+        min-height: 100%;
+        background: linear-gradient(160deg, #20473c 0%, #2f7d59 55%, #6ba27b 100%);
+    }
+
+    .recommendation-side.info { background: linear-gradient(160deg, #1e4f60 0%, #357790 55%, #74b2c4 100%); }
+    .recommendation-side.warning { background: linear-gradient(160deg, #6f4a17 0%, #b27926 55%, #e0b15e 100%); }
+    .recommendation-side.success { background: linear-gradient(160deg, #20473c 0%, #2f7d59 55%, #6ba27b 100%); }
+    .recommendation-side.secondary { background: linear-gradient(160deg, #40515a 0%, #64727b 55%, #94a0a7 100%); }
+
+    .recommendation-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.14);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 18px;
+    }
+
+    .recommendation-side h3 {
+        color: #fff;
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+
+    .recommendation-side p {
+        color: rgba(255, 255, 255, 0.86);
+        margin-bottom: 0;
+    }
+
+    .recommendation-body {
+        padding: 30px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .mini-stat {
+        border-radius: 20px;
+        padding: 18px;
+        background: rgba(255,255,255,0.72);
+        border: 1px solid rgba(20, 49, 43, 0.08);
+        backdrop-filter: blur(8px);
+        height: 100%;
+    }
+
+    .mini-stat-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #71857f;
+        margin-bottom: 6px;
+    }
+
+    .mini-stat-value {
+        color: var(--result-ink);
+        font-weight: 800;
+        font-size: 1.35rem;
+    }
+
+    .recommendation-note {
+        margin-top: 18px;
+        padding: 18px 20px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(47, 125, 89, 0.08), rgba(199, 138, 44, 0.08));
+        border: 1px solid rgba(20, 49, 43, 0.08);
+    }
+
+    .recommendation-note p:last-child { margin-bottom: 0; }
+
+    .sensor-ribbon {
+        border-radius: 24px;
+        padding: 24px 26px;
+        background: linear-gradient(135deg, #fdfcf7, #edf5ef);
+        border: 1px solid rgba(47, 125, 89, 0.12);
+        box-shadow: 0 16px 34px rgba(20, 49, 43, 0.08);
+    }
+
+    .sensor-chip-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+    }
+
+    .sensor-chip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.84);
+        border: 1px solid rgba(20, 49, 43, 0.08);
+    }
+
+    .sensor-chip i {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+    }
+
+    .sensor-chip.n i { background: linear-gradient(135deg, #2f7d59, #67af85); }
+    .sensor-chip.p i { background: linear-gradient(135deg, #47849e, #77b5c8); }
+    .sensor-chip.k i { background: linear-gradient(135deg, #c78a2c, #dfb15a); }
+
+    .sensor-chip-label {
+        color: #70847e;
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+    }
+
+    .sensor-chip-value {
+        color: var(--result-ink);
+        font-weight: 800;
+        font-size: 1.05rem;
+    }
+
+    .viz-card,
+    .results-table-shell {
+        border-radius: 26px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.98));
+        border: 1px solid rgba(20, 49, 43, 0.08);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+    }
+
+    .viz-card-head,
+    .results-table-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 22px 24px 0;
+    }
+
+    .viz-card-head h5,
+    .results-table-head h5 {
+        margin: 0;
+        color: var(--result-ink);
+    }
+
+    .viz-card-subtitle {
+        color: var(--result-muted);
+        font-size: 0.86rem;
+        margin-top: 4px;
+    }
+
+    .viz-card-body {
+        padding: 18px 24px 24px;
+    }
+
+    .viz-card-body img {
+        width: 100%;
+        border-radius: 20px;
+        background: #fff;
+        border: 1px solid rgba(20, 49, 43, 0.08);
+    }
+
+    .results-table-shell .table-responsive { padding: 12px 20px 20px; }
+
+    #resultsTable {
+        margin-bottom: 0;
+        overflow: hidden;
+        border-radius: 18px;
+    }
+
+    #resultsTable thead th {
+        background: #edf5ef;
+        color: #28453d;
+        border-bottom: none;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 16px 14px;
+    }
+
+    #resultsTable tbody td {
+        padding: 16px 14px;
+        border-color: rgba(20, 49, 43, 0.08);
+        color: #264039;
+        vertical-align: middle;
+    }
+
+    #resultsTable tbody tr:hover {
+        background: rgba(47, 125, 89, 0.04);
+    }
+
+    .change-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .change-pill.up {
+        color: #17663f;
+        background: rgba(34, 197, 94, 0.12);
+    }
+
+    .change-pill.down {
+        color: #8d2438;
+        background: rgba(239, 68, 68, 0.10);
+    }
+
+    .change-pill.flat {
+        color: #5f6f69;
+        background: rgba(148, 163, 184, 0.16);
+    }
+
+    .results-actions {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .results-actions .btn {
+        min-width: 220px;
+        border-radius: 16px;
+        padding: 14px 20px;
+        font-weight: 700;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    @media (max-width: 991.98px) {
+        .results-hero,
+        .recommendation-side,
+        .recommendation-body,
+        .sensor-ribbon {
+            padding: 24px;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .results-hero {
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .metric-panel,
+        .recommendation-panel,
+        .viz-card,
+        .results-table-shell,
+        .sensor-ribbon {
+            border-radius: 20px;
+        }
+
+        .results-actions .btn {
+            width: 100%;
+        }
+
+        .viz-card-head,
+        .results-table-head {
+            padding: 20px 18px 0;
+        }
+
+        .viz-card-body,
+        .results-table-shell .table-responsive {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid results-shell">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="welcome-card">
-                <h2><i class="fas fa-chart-line me-2"></i>{{ prediction_type }} Prediction Results</h2>
-                <p class="mb-0">Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+            <div class="results-hero">
+                <div class="results-kicker">
+                    <i class="fas fa-seedling"></i>
+                    Market Forecast Intelligence
+                </div>
+                <h2>{{ prediction_type }} Sales Outlook</h2>
+                <p class="mb-0">Review projected market movement, buyer demand, and the best farmer action window from your current forecast.</p>
+                <div class="hero-meta-grid">
+                    <div class="hero-meta-card">
+                        <div class="hero-meta-label">Generated</div>
+                        <div class="hero-meta-value">{{ now.strftime('%Y-%m-%d %H:%M') }}</div>
+                    </div>
+                    <div class="hero-meta-card">
+                        <div class="hero-meta-label">Forecast Window</div>
+                        <div class="hero-meta-value">{{ results.start_date }} to {{ results.end_date }}</div>
+                    </div>
+                    <div class="hero-meta-card">
+                        <div class="hero-meta-label">Prediction Mode</div>
+                        <div class="hero-meta-value">{{ prediction_type }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -16,76 +512,107 @@
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card primary">
-                <div class="stat-icon">
-                    <i class="fas fa-chart-line"></i>
+            <div class="metric-panel price">
+                <div class="metric-top">
+                    <div class="metric-badge price">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-wave-square"></i> Price</div>
                 </div>
-                <div class="stat-content">
-                    <h3>₨ {{ "%.2f"|format(results.avg_price) }}</h3>
-                    <p>Average Price</p>
-                    <small>Over {{ results.dates|length }} days</small>
-                </div>
+                <h3>₨ {{ "%.2f"|format(results.avg_price) }}</h3>
+                <p>Average Price</p>
+                <small>Across {{ results.dates|length }} forecast days</small>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card success">
-                <div class="stat-icon">
-                    <i class="fas fa-weight-hanging"></i>
+            <div class="metric-panel demand">
+                <div class="metric-top">
+                    <div class="metric-badge demand">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-basket-shopping"></i> Demand</div>
                 </div>
-                <div class="stat-content">
-                    <h3>{{ "%.0f"|format(results.avg_demand) }} Tons</h3>
-                    <p>Average Demand</p>
-                    <small>Per day</small>
-                </div>
+                <h3>{{ "%.0f"|format(results.avg_demand) }} Tons</h3>
+                <p>Average Demand</p>
+                <small>Expected daily market pull</small>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card info">
-                <div class="stat-icon">
-                    <i class="fas fa-arrow-up"></i>
+            <div class="metric-panel market">
+                <div class="metric-top">
+                    <div class="metric-badge market">
+                        <i class="fas fa-arrow-trend-up"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-compass"></i> Trend</div>
                 </div>
-                <div class="stat-content">
-                    <h3>{{ results.price_trend }}</h3>
-                    <p>Price Trend</p>
-                    <small>{{ results.price_range[0]|round(2) }} - {{ results.price_range[1]|round(2) }} LKR/kg</small>
-                </div>
+                <h3>{{ results.price_trend }}</h3>
+                <p>Price Trend</p>
+                <small>{{ results.price_range[0]|round(2) }} to {{ results.price_range[1]|round(2) }} LKR/kg</small>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card warning">
-                <div class="stat-icon">
-                    <i class="fas fa-arrow-down"></i>
+            <div class="metric-panel volume">
+                <div class="metric-top">
+                    <div class="metric-badge volume">
+                        <i class="fas fa-arrow-right-arrow-left"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-chart-column"></i> Volume</div>
                 </div>
-                <div class="stat-content">
-                    <h3>{{ results.demand_trend }}</h3>
-                    <p>Demand Trend</p>
-                    <small>{{ results.demand_range[0]|round(0) }} - {{ results.demand_range[1]|round(0) }} Tons</small>
-                </div>
+                <h3>{{ results.demand_trend }}</h3>
+                <p>Demand Trend</p>
+                <small>{{ results.demand_range[0]|round(0) }} to {{ results.demand_range[1]|round(0) }} Tons</small>
             </div>
         </div>
     </div>
 
-    {% if results.sensor_data %}
-    <!-- Sensor Data Used -->
+    {% if results.sales_recommendation %}
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-microchip me-2 text-success"></i>Sensor Data Used</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-2 col-6 mb-2">
-                            <strong>Nitrogen:</strong> {{ results.sensor_data.nitrogen }} mg/kg
+            <div class="recommendation-panel">
+                <div class="card-body p-0">
+                    <div class="row g-0 align-items-stretch">
+                        <div class="col-lg-4 recommendation-side {{ results.sales_recommendation.variant }} d-flex flex-column justify-content-center">
+                            <div class="recommendation-eyebrow">
+                                <i class="fas fa-wheat-awn"></i>
+                                Farmer Recommendation
+                            </div>
+                            <h3 class="mb-2"><i class="{{ results.sales_recommendation.icon }} me-2"></i>{{ results.sales_recommendation.action }}</h3>
+                            <p class="mb-0">{{ results.sales_recommendation.headline }}</p>
                         </div>
-                        <div class="col-md-2 col-6 mb-2">
-                            <strong>Phosphorus:</strong> {{ results.sensor_data.phosphorus }} mg/kg
-                        </div>
-                        <div class="col-md-2 col-6 mb-2">
-                            <strong>Potassium:</strong> {{ results.sensor_data.potassium }} mg/kg
+                        <div class="col-lg-8 recommendation-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="mini-stat">
+                                        <div class="mini-stat-label">Recommended Selling Date</div>
+                                        <div class="mini-stat-value">{{ results.sales_recommendation.recommended_date or 'Now' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mini-stat">
+                                        <div class="mini-stat-label">Expected Selling Price</div>
+                                        <div class="mini-stat-value">
+                                            {% if results.sales_recommendation.recommended_price is not none %}
+                                                ₨ {{ "%.2f"|format(results.sales_recommendation.recommended_price) }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mini-stat">
+                                        <div class="mini-stat-label">Waiting Period</div>
+                                        <div class="mini-stat-value">{{ results.sales_recommendation.waiting_days }} day{% if results.sales_recommendation.waiting_days != 1 %}s{% endif %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="recommendation-note">
+                                <p class="mb-2 fw-semibold">{{ results.sales_recommendation.message }}</p>
+                                <p class="mb-0 text-muted">{{ results.sales_recommendation.demand_note }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -94,36 +621,49 @@
     </div>
     {% endif %}
 
-    <!-- Charts -->
+    {% if results.sensor_data %}
+    <!-- Sensor Data Used -->
     <div class="row mb-4">
-        <div class="col-lg-6 mb-4">
-            <div class="chart-container">
-                <h5 class="mb-3"><i class="fas fa-chart-line text-primary me-2"></i>Price Prediction</h5>
-                <img src="data:image/png;base64,{{ price_plot }}" class="img-fluid" alt="Price Prediction Chart">
-            </div>
-        </div>
-
-        <div class="col-lg-6 mb-4">
-            <div class="chart-container">
-                <h5 class="mb-3"><i class="fas fa-chart-bar text-success me-2"></i>Demand Prediction</h5>
-                <img src="data:image/png;base64,{{ demand_plot }}" class="img-fluid" alt="Demand Prediction Chart">
-            </div>
-        </div>
-
         <div class="col-12">
-            <div class="chart-container">
-                <h5 class="mb-3"><i class="fas fa-chart-pie text-info me-2"></i>Combined Trend</h5>
-                <img src="data:image/png;base64,{{ combined_plot }}" class="img-fluid" alt="Combined Trend Chart">
+            <div class="sensor-ribbon">
+                <h5 class="mb-0"><i class="fas fa-microchip me-2 text-success"></i>Sensor Snapshot Used For This Forecast</h5>
+                <div class="sensor-chip-grid">
+                    <div class="sensor-chip n">
+                        <i class="fas fa-leaf"></i>
+                        <div>
+                            <div class="sensor-chip-label">Nitrogen</div>
+                            <div class="sensor-chip-value">{{ results.sensor_data.nitrogen }} mg/kg</div>
+                        </div>
+                    </div>
+                    <div class="sensor-chip p">
+                        <i class="fas fa-flask"></i>
+                        <div>
+                            <div class="sensor-chip-label">Phosphorus</div>
+                            <div class="sensor-chip-value">{{ results.sensor_data.phosphorus }} mg/kg</div>
+                        </div>
+                    </div>
+                    <div class="sensor-chip k">
+                        <i class="fas fa-seedling"></i>
+                        <div>
+                            <div class="sensor-chip-label">Potassium</div>
+                            <div class="sensor-chip-value">{{ results.sensor_data.potassium }} mg/kg</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Detailed Predictions Table -->
     <div class="row">
         <div class="col-12">
-            <div class="table-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>Daily Predictions</h5>
+            <div class="results-table-shell">
+                <div class="results-table-head">
+                    <div>
+                        <h5 class="mb-0"><i class="fas fa-table me-2"></i>Daily Predictions</h5>
+                        <div class="viz-card-subtitle">Daily market outlook with directional movement in both price and demand.</div>
+                    </div>
                     <div>
                         <button class="btn btn-outline-primary btn-sm me-2" id="copyResults">
                             <i class="far fa-copy"></i> Copy
@@ -155,11 +695,11 @@
                                     {% if i > 0 %}
                                         {% set change = results.prices[i] - results.prices[i-1] %}
                                         {% if change > 0 %}
-                                            <span class="text-success">↑ {{ "+%.2f"|format(change) }}</span>
+                                            <span class="change-pill up"><i class="fas fa-arrow-up"></i>{{ "+%.2f"|format(change) }}</span>
                                         {% elif change < 0 %}
-                                            <span class="text-danger">↓ {{ "%.2f"|format(change) }}</span>
+                                            <span class="change-pill down"><i class="fas fa-arrow-down"></i>{{ "%.2f"|format(change) }}</span>
                                         {% else %}
-                                            <span class="text-muted">→ 0.00</span>
+                                            <span class="change-pill flat"><i class="fas fa-minus"></i>0.00</span>
                                         {% endif %}
                                     {% else %}
                                         -
@@ -169,11 +709,11 @@
                                     {% if i > 0 %}
                                         {% set change = results.demands[i] - results.demands[i-1] %}
                                         {% if change > 0 %}
-                                            <span class="text-success">↑ {{ "+%.0f"|format(change) }}</span>
+                                            <span class="change-pill up"><i class="fas fa-arrow-up"></i>{{ "+%.0f"|format(change) }}</span>
                                         {% elif change < 0 %}
-                                            <span class="text-danger">↓ {{ "%.0f"|format(change) }}</span>
+                                            <span class="change-pill down"><i class="fas fa-arrow-down"></i>{{ "%.0f"|format(change) }}</span>
                                         {% else %}
-                                            <span class="text-muted">→ 0</span>
+                                            <span class="change-pill flat"><i class="fas fa-minus"></i>0</span>
                                         {% endif %}
                                     {% else %}
                                         -
@@ -188,15 +728,62 @@
         </div>
     </div>
 
+    <!-- Charts -->
+    <div class="row mb-4 mt-4">
+        <div class="col-lg-6 mb-4">
+            <div class="viz-card">
+                <div class="viz-card-head">
+                    <div>
+                        <h5><i class="fas fa-chart-line text-primary me-2"></i>Price Prediction</h5>
+                        <div class="viz-card-subtitle">Projected selling price movement across the selected forecast period.</div>
+                    </div>
+                </div>
+                <div class="viz-card-body">
+                    <img src="{{ ('data:image/png;base64,' ~ price_plot)|safe }}" class="img-fluid" alt="Price Prediction Chart">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="viz-card">
+                <div class="viz-card-head">
+                    <div>
+                        <h5><i class="fas fa-chart-bar text-success me-2"></i>Demand Prediction</h5>
+                        <div class="viz-card-subtitle">Expected daily market demand to support harvest planning and sales timing.</div>
+                    </div>
+                </div>
+                <div class="viz-card-body">
+                    <img src="{{ ('data:image/png;base64,' ~ demand_plot)|safe }}" class="img-fluid" alt="Demand Prediction Chart">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="viz-card">
+                <div class="viz-card-head">
+                    <div>
+                        <h5><i class="fas fa-chart-pie text-info me-2"></i>Combined Trend</h5>
+                        <div class="viz-card-subtitle">A single view of price direction and demand movement for decision making.</div>
+                    </div>
+                </div>
+                <div class="viz-card-body">
+                    <img src="{{ ('data:image/png;base64,' ~ combined_plot)|safe }}" class="img-fluid" alt="Combined Trend Chart">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="row mt-4">
         <div class="col-12 text-center">
-            <a href="{{ url_for('Prices_Demand_predict') }}" class="btn btn-outline-primary btn-lg me-2">
-                <i class="fas fa-arrow-left me-2"></i>New Prediction
-            </a>
-            <a href="{{ url_for('Prices_Demand_sensor_predict') }}" class="btn btn-outline-success btn-lg">
-                <i class="fas fa-microchip me-2"></i>Try Sensor-Based
-            </a>
+            <div class="results-actions">
+                <a href="{{ url_for('Prices_Demand_predict') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>New Prediction
+                </a>
+                <a href="{{ url_for('Prices_Demand_sensor_predict') }}" class="btn btn-outline-success btn-lg">
+                    <i class="fas fa-microchip me-2"></i>Try Sensor-Based
+                </a>
+            </div>
         </div>
     </div>
 </div>

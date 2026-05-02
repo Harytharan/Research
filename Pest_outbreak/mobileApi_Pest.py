@@ -8,11 +8,12 @@ from tensorflow.keras.preprocessing import image
 import tempfile
 import traceback
 
+from predict_image import NON_PEST_LABELS, load_class_labels
+
 app = Flask(__name__)
 
 # ------------------- CONFIG -------------------
 MODEL_PATH = "best_pest_model.h5"
-TRAIN_PATH = "PestDataset/train"
 RECOMMENDATION_FILE = "recommendations.json"
 IMG_SIZE = (224, 224)
 UPLOAD_FOLDER = "uploads"
@@ -36,10 +37,7 @@ def initialize_app():
         print("Pest detection model loaded successfully!")
 
         # Load class labels
-        if not os.path.exists(TRAIN_PATH):
-            class_labels = ["aphid", "caterpillar", "whitefly", "spider_mite", "thrips", "mealybug"]
-        else:
-            class_labels = sorted(os.listdir(TRAIN_PATH))
+        class_labels = load_class_labels()
         print(f"Class labels: {class_labels}")
 
         # Load recommendations
@@ -76,6 +74,8 @@ def predict_pest(img_path):
         predicted_idx = int(np.argmax(preds))
         confidence = float(np.max(preds))
         pest_name = class_labels[predicted_idx] if class_labels else f"class_{predicted_idx}"
+        if pest_name.lower() in NON_PEST_LABELS:
+            return "Non-pest item", confidence
         return pest_name, confidence
     except Exception as e:
         print(f"Error predicting pest: {e}")

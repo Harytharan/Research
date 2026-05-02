@@ -14,7 +14,7 @@ from predict import (
 )
 
  
-PORT = "COM3"
+PORT = "COM7"
 BAUD = 115200
 N_DAYS = 7
  

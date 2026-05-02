@@ -1,0 +1,51 @@
+# Python cache and environments
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+env/
+venv/
+.env
+
+# IDE files
+.idea/
+.vscode/
+
+# Datasets (ignore raw and large data files)
+*.xlsx
+*.xls
+*.csv
+*.parquet
+data/
+**/data/
+*/data/
+
+# Model artifacts
+models/
+**/models/
+*.h5
+*.keras
+*.joblib
+*.pkl
+*.ckpt
+*.model
+*.sav
+
+# Pest outbreak generated folders
+Pest_outbreak/ddd/
+Pest_outbreak/ddddd/
+
+# Uploads / large static files
+uploads/
+static/uploads/
+
+# Logs and generated plots (optional)
+*.log
+*.png
+*.svg
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db

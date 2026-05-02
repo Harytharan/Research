@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Estimation History — Farming Cost{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-hero {
+    background: linear-gradient(135deg, #059669, #10b981);
+    border-radius: 20px;
+    padding: 28px 36px;
+    color: #fff;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(5, 150, 105, 0.2);
+}
+.history-hero::before {
+    content: '';
+    position: absolute;
+    top: -60%;
+    right: -10%;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .08);
+}
+.history-hero h2 {
+    font-weight: 800;
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 2;
+}
+.history-hero p {
+    opacity: .9;
+    font-size: .92rem;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.history-card {
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    padding: 32px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .03);
+    margin-bottom: 28px;
+}
+
+.back-link-row {
+    margin-bottom: 20px;
+}
+.back-link-row a {
+    color: #64748b;
+    font-size: .88rem;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+}
+.back-link-row a:hover {
+    color: #10b981;
+}
+
+.variance-neg {
+    color: #16a34a;
+    background: #f0fdf4;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+.variance-pos {
+    color: #d97706;
+    background: #fffbeb;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+@media(max-width:992px) {
+    .history-card {
+        padding: 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    
+    <div class="back-link-row fade-in">
+        <a href="{{ url_for('cost_index') }}"><i class="fas fa-arrow-left"></i> Back to Cost Dashboard</a>
+    </div>
+
+    <div class="history-hero fade-in">
+        <h2><i class="fas fa-history"></i> Farming Cost History</h2>
+        <p>Review your saved cost estimations and financial analytics for different cultivation cycles.</p>
+    </div>
+
+    <div class="history-card fade-in">
+        {% if cost_history %}
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+                <thead>
+                    <tr style="border-bottom:2px solid #e2e8f0;">
+                        <th style="padding:10px 14px; text-align:left; color:#64748b; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">AI Predicted Cost</th>
+                        <th style="padding:10px 14px; text-align:left; color:#64748b; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Input Total</th>
+                        <th style="padding:10px 14px; text-align:left; color:#64748b; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Variance</th>
+                        <th style="padding:10px 14px; text-align:left; color:#64748b; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Area / Type</th>
+                        <th style="padding:10px 14px; text-align:left; color:#64748b; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Season</th>
+                        <th style="padding:10px 14px; text-align:left; color:#64748b; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Saved At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in cost_history %}
+                    <tr style="border-bottom:1px solid #f1f5f9; transition:background .2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                        <td style="padding:12px 14px; font-weight:700; color:#1e293b;">LKR {{ "{:,.0f}".format(e.predicted_cost) }}</td>
+                        <td style="padding:12px 14px; color:#475569;">LKR {{ "{:,.0f}".format(e.total_input) }}</td>
+                        <td style="padding:12px 14px;">
+                            <span class="{% if e.difference > 0 %}variance-pos{% else %}variance-neg{% endif %}">
+                                {{ "{:+,.0f}".format(e.difference) }}
+                            </span>
+                        </td>
+                        <td style="padding:12px 14px; color:#475569;">
+                            {{ e.input_data.Area_acres }} Ac / {{ e.input_data.Seed_Type }}
+                        </td>
+                        <td style="padding:12px 14px;">
+                            <span style="background:#eff6ff; color:#2563eb; border-radius:8px; padding:3px 10px; font-size:.82rem; font-weight:600;">{{ e.input_data.Year }} {{ e.input_data.Season }}</span>
+                        </td>
+                        <td style="padding:12px 14px; color:#94a3b8; font-size:.82rem;">{{ e.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align:center; padding:36px 20px; color:#64748b;">
+            <i class="fas fa-inbox" style="font-size:2.5rem; margin-bottom:14px; display:block; color:#cbd5e1;"></i>
+            <strong style="color:#1e293b;">No saved estimations yet.</strong><br>
+            <span style="font-size:.88rem; margin-top:6px; display:block;">Run a <a href="{{ url_for('cost_predict') }}" style="color:#16a34a; font-weight:600;">Standard Estimation</a> or <a href="{{ url_for('cost_sensor_predict') }}" style="color:#16a34a; font-weight:600;">Sensor mode</a>, and click <em>"Save Estimation"</em> to track your records here.</span>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

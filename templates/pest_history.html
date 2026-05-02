@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction History - Pest Management{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-shell {
+    padding: 1.5rem;
+}
+
+.history-hero {
+    background: linear-gradient(135deg, #14532d, #16a34a);
+    color: #fff;
+    border-radius: 24px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 18px 36px rgba(22, 163, 74, 0.18);
+}
+
+.history-hero h2 {
+    margin: 0 0 6px;
+    font-weight: 800;
+}
+
+.history-hero p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    color: #475569;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    color: #16a34a;
+}
+
+.history-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table th {
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    padding: 12px 14px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.history-table td {
+    padding: 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.pill.manual {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.pill.sensor {
+    background: #ecfdf5;
+    color: #15803d;
+}
+
+.pill.image {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+
+.pill.low {
+    background: #ecfdf5;
+    color: #15803d;
+}
+
+.pill.medium {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.pill.high {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.muted-copy {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: #64748b;
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 991px) {
+    .history-shell {
+        padding: 1rem;
+    }
+
+    .history-panel {
+        padding: 18px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid history-shell">
+    <a href="{{ url_for('pest_index') }}" class="back-link"><i class="fas fa-arrow-left"></i>Back to Pest Management</a>
+
+    <div class="history-hero">
+        <h2><i class="fas fa-history me-2"></i>Pest Prediction History</h2>
+        <p>Saved outbreak risk assessments from manual, live sensor, and image-based predictions.</p>
+    </div>
+
+    <div class="history-panel">
+        {% if pest_history %}
+        <div style="overflow-x:auto;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Predicted Pest</th>
+                        <th>Mode</th>
+                        <th>Risk</th>
+                        <th>Confidence</th>
+                        <th>Inputs</th>
+                        <th>Recommended Action</th>
+                        <th>Saved At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pest_history %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.predicted_pest }}</strong>
+                        </td>
+                        <td>
+                            <span class="pill {% if item.prediction_type == 'Sensor-Based' %}sensor{% elif item.prediction_type == 'Image-Based' %}image{% else %}manual{% endif %}">{{ item.prediction_type }}</span>
+                        </td>
+                        <td>
+                            <span class="pill {{ item.risk_level|lower }}">{{ item.risk_level }}</span>
+                        </td>
+                        <td>{{ item.confidence }}%</td>
+                        <td class="muted-copy">
+                            {% if item.prediction_type == 'Image-Based' %}
+                            File: {{ item.input_data.filename or 'Uploaded image' }}<br>
+                            Source: {{ item.input_data.source or 'image-upload' }}
+                            {% else %}
+                            T: {{ item.input_data.temperature }} C<br>
+                            H: {{ item.input_data.humidity }} %<br>
+                            P: {{ item.input_data.pressure }} hPa<br>
+                            L: {{ item.input_data.light }} lux
+                            {% endif %}
+                        </td>
+                        <td class="muted-copy">{{ item.recommended_action }}</td>
+                        <td class="muted-copy">{{ item.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox d-block"></i>
+            <strong>No pest predictions saved yet.</strong>
+            <p class="mb-0">Run a manual, sensor-based, or image-based pest prediction and it will appear here automatically.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

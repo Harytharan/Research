@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Forecast History — Price & Demand{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 26px;
+        padding: 32px 34px;
+        margin-bottom: 28px;
+        background: linear-gradient(135deg, #183b34 0%, #27614f 52%, #d2a24b 100%);
+        color: #fff;
+        box-shadow: 0 22px 48px rgba(24, 59, 52, 0.18);
+    }
+
+    .history-hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -40px -54px auto;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.10);
+    }
+
+    .history-hero > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .back-link-row {
+        margin-bottom: 18px;
+    }
+
+    .back-link-row a {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .back-link-row a:hover {
+        color: #1f6a43;
+    }
+
+    .forecast-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+        gap: 20px;
+    }
+
+    .forecast-card {
+        border-radius: 24px;
+        padding: 24px;
+        background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,245,238,.94));
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.07);
+    }
+
+    .forecast-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .forecast-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        font-weight: 700;
+        background: rgba(47, 125, 89, 0.10);
+        color: #1f6a43;
+    }
+
+    .forecast-timestamp {
+        color: #64748b;
+        font-size: .84rem;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .forecast-range {
+        margin: 0 0 14px;
+        color: #18312b;
+        font-size: 1.1rem;
+        font-weight: 800;
+    }
+
+    .forecast-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .forecast-stat {
+        border-radius: 18px;
+        padding: 15px;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.07);
+    }
+
+    .forecast-label {
+        font-size: .76rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    .forecast-value {
+        font-size: 1.08rem;
+        font-weight: 800;
+        color: #18312b;
+    }
+
+    .forecast-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .forecast-pill {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        color: #334155;
+        font-size: .8rem;
+        font-weight: 700;
+    }
+
+    .sensor-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0;
+    }
+
+    .sensor-pill {
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: rgba(71, 132, 158, 0.10);
+        color: #245d72;
+        font-size: .78rem;
+        font-weight: 700;
+    }
+
+    .forecast-note {
+        color: #475569;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .empty-state {
+        border-radius: 24px;
+        padding: 40px 24px;
+        text-align: center;
+        background: linear-gradient(135deg, #fffdf6, #f4f8ee);
+        border: 1px dashed rgba(148, 163, 184, 0.5);
+        color: #64748b;
+    }
+
+    .empty-state i {
+        display: block;
+        font-size: 2.6rem;
+        color: #c0c9ae;
+        margin-bottom: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+    <div class="back-link-row fade-in">
+        <a href="{{ url_for('Prices_Demand_index') }}"><i class="fas fa-arrow-left"></i> Back to Price & Demand Overview</a>
+    </div>
+
+    <div class="history-hero fade-in">
+        <h2><i class="fas fa-history me-2"></i>Forecast History</h2>
+        <p class="mb-0">Every Price & Demand prediction is now stored automatically, including recommendation summaries and sensor-assisted runs.</p>
+    </div>
+
+    {% if price_history %}
+    <div class="forecast-grid fade-in">
+        {% for item in price_history %}
+        <div class="forecast-card">
+            <div class="forecast-top">
+                <span class="forecast-badge"><i class="fas fa-chart-line"></i> {{ item.prediction_type }}</span>
+                <div class="forecast-timestamp">Saved at<br>{{ item.timestamp }}</div>
+            </div>
+
+            <p class="forecast-range">{{ item.start_date }} to {{ item.end_date }}</p>
+
+            <div class="forecast-stats">
+                <div class="forecast-stat">
+                    <div class="forecast-label">Average Price</div>
+                    <div class="forecast-value">Rs. {{ '%.2f'|format(item.avg_price) }}</div>
+                </div>
+                <div class="forecast-stat">
+                    <div class="forecast-label">Average Demand</div>
+                    <div class="forecast-value">{{ '%.0f'|format(item.avg_demand) }} Tons</div>
+                </div>
+            </div>
+
+            <div class="forecast-meta">
+                <span class="forecast-pill"><i class="fas fa-arrow-trend-up me-1"></i> Price {{ item.price_trend }}</span>
+                <span class="forecast-pill"><i class="fas fa-boxes-stacked me-1"></i> Demand {{ item.demand_trend }}</span>
+                {% if item.recommended_price %}
+                <span class="forecast-pill"><i class="fas fa-coins me-1"></i> Rs. {{ '%.2f'|format(item.recommended_price) }}</span>
+                {% endif %}
+            </div>
+
+            {% if item.sensor_data %}
+            <div class="sensor-strip">
+                <span class="sensor-pill">N {{ item.sensor_data.nitrogen }}</span>
+                <span class="sensor-pill">P {{ item.sensor_data.phosphorus }}</span>
+                <span class="sensor-pill">K {{ item.sensor_data.potassium }}</span>
+                <span class="sensor-pill">Live {{ 'Yes' if item.sensor_data.live_connected else 'No' }}</span>
+            </div>
+            {% endif %}
+
+            <p class="forecast-note">
+                <strong>Recommendation:</strong>
+                {{ item.recommended_action or 'Monitor market conditions before selling.' }}
+                {% if item.recommended_date %}
+                on {{ item.recommended_date }}
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state fade-in">
+        <i class="fas fa-seedling"></i>
+        <strong style="display:block; color:#18312b; margin-bottom:8px;">No forecasts saved yet.</strong>
+        Generate a standard or sensor-based market prediction and it will appear here automatically.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

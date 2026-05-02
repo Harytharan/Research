@@ -15,7 +15,50 @@
 
     <!-- Main Result -->
     <div class="row mb-4">
-        <div class="col-lg-8 mx-auto">
+        <div class="col-lg-6 mx-auto">
+            {% if prediction_type in ['Sensor-Based', 'Manual Entry'] %}
+                {% set prob = result.probability %}
+                {% if prob > 0.75 %}
+                    {% set risk_text = 'HIGH' %}
+                    {% set risk_class = 'danger' %}
+                    {% set risk_icon = 'fa-biohazard' %}
+                {% elif prob > 0.4 %}
+                    {% set risk_text = 'MEDIUM' %}
+                    {% set risk_class = 'warning' %}
+                    {% set risk_icon = 'fa-exclamation-triangle' %}
+                {% else %}
+                    {% set risk_text = 'LOW' %}
+                    {% set risk_class = 'success' %}
+                    {% set risk_icon = 'fa-shield-alt' %}
+                {% endif %}
+
+                <div class="card shadow-sm border-0 border-top border-{{ risk_class }} border-4 rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas {{ risk_icon }} fa-3x text-{{ risk_class }} mb-2"></i>
+                            <h6 class="text-uppercase text-muted fw-bold small mb-1">Outbreak Risk Assessment</h6>
+                            <h2 class="fw-bold text-{{ risk_class }} mb-1">Risk Level: {{ risk_text }}</h2>
+                            <p class="text-muted small mb-0">Confidence Score: {{ (prob * 100)|round(1) }}%</p>
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-clipboard-check me-2"></i>Recommended Actions:</h6>
+                            <p class="mb-0 text-dark" style="font-size: 0.95rem; line-height: 1.5;">
+                                {{ result.recommended_action }}
+                            </p>
+                        </div>
+
+                        <div class="text-center pt-2 border-top">
+                            <p class="mb-0 text-muted small">
+                                <i class="fas fa-bug me-1"></i>
+                                Identify: Maybe this pest will attack <strong>{{ result.predicted_pest|upper }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            
+            {% else %}
+            <!-- Original Image-Based Output -->
             <div class="card">
                 <div class="card-body text-center">
                     {% if uploaded_image %}
@@ -40,6 +83,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 
@@ -80,6 +124,7 @@
     </div>
     {% endif %}
 
+    {% if prediction_type == 'Image-Based' %}
     <!-- Risk Assessment -->
     <div class="row mb-4">
         <div class="col-md-6 mb-4">
@@ -127,6 +172,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Action Buttons -->
     <div class="row mt-4">
@@ -134,13 +180,39 @@
             <a href="{{ url_for('pest_sensor_predict') }}" class="btn btn-outline-primary btn-lg me-2">
                 <i class="fas fa-microchip me-2"></i>New Sensor Detection
             </a>
-            <a href="{{ url_for('pest_image_predict') }}" class="btn btn-outline-success btn-lg">
-                <i class="fas fa-camera me-2"></i>New Image Detection
+            <a href="{{ url_for('pest_history') }}" class="btn btn-outline-secondary btn-lg me-2">
+                <i class="fas fa-history me-2"></i>View History
             </a>
-            <button class="btn btn-outline-info btn-lg" onclick="window.print()">
-                <i class="fas fa-print me-2"></i>Print Results
-            </button>
+            <a href="{{ url_for('pest_image_predict') }}" class="btn btn-outline-success btn-lg">
+                <i class="fas fa-camera me-2"></i>New Pest Detection
+            </a>
+            <a href="{{ url_for('download_pest_report') }}" class="btn btn-outline-info btn-lg">
+                <i class="fas fa-file-pdf me-2"></i>Download PDF Report
+            </a>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if prediction_type == 'Image-Based' and result and filename %}
+<script>
+    fetch('{{ url_for("api_save_pest_history") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            prediction_type: 'Image-Based',
+            predicted_pest: {{ result.predicted_pest|tojson }},
+            probability: {{ result.probability|tojson }},
+            recommended_action: {{ result.recommended_action|tojson }},
+            input_data: {
+                filename: {{ filename|tojson }},
+                source: 'uploaded-image'
+            }
+        })
+    }).catch(() => {});
+</script>
+{% endif %}
 {% endblock %}

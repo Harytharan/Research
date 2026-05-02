@@ -1,98 +1,213 @@
 {% extends "base.html" %}
 
-{% block title %}Manual Input - Fertilizer Recommendation{% endblock %}
+{% block title %}Manual Input — Fertilizer Recommendation{% endblock %}
+
+{% block extra_css %}
+<style>
+.manual-hero {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    border-radius: 20px; padding: 28px 36px; color: #fff;
+    margin-bottom: 28px; position: relative; overflow: hidden;
+}
+.manual-hero::before { content:''; position:absolute; top:-60%; right:-15%; width:350px; height:350px; border-radius:50%; background:rgba(255,255,255,.07); }
+.manual-hero h2 { font-weight:800; font-size:1.5rem; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
+.manual-hero p { opacity:.9; font-size:.92rem; margin:0; }
+
+.input-card {
+    background: #fff; border-radius: 20px; border: 1px solid #e2e8f0;
+    padding: 32px; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.input-section-title { font-weight:700; font-size:1rem; color:#1e293b; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.input-section-title i { font-size:1rem; }
+.input-section-title .soil { color:#16a34a; } .input-section-title .env { color:#0891b2; } .input-section-title .crop { color:#d97706; }
+.input-section-divider { height:1px; background:#e2e8f0; margin: 24px 0; }
+
+.fert-label { font-weight:600; font-size:.86rem; color:#334155; margin-bottom:5px; display:flex; align-items:center; gap:6px; }
+.fert-label i { color:#16a34a; font-size:.85rem; }
+.fert-input {
+    border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 16px; font-size:.93rem; font-family:'Inter',sans-serif;
+    transition: all .2s; background: #f8fafc; width:100%;
+}
+.fert-input:focus { border-color:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.12); background:#fff; outline:none; }
+.fert-input.invalid { border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.1); }
+.fert-input.valid { border-color:#22c55e; }
+.range-hint { font-size:.78rem; color:#94a3b8; margin-top:4px; display:flex; align-items:center; gap:4px; }
+.range-hint i { font-size:.65rem; }
+.validation-msg { font-size:.78rem; margin-top:4px; display:none; }
+.validation-msg.error { color:#ef4444; display:block; }
+.validation-msg.ok { color:#22c55e; display:block; }
+
+.fert-select {
+    border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 16px; font-size:.93rem; font-family:'Inter',sans-serif;
+    transition: all .2s; background-color: #f8fafc; width:100%;
+    appearance:auto;
+}
+.fert-select:focus { border-color:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.12); outline:none; }
+
+.btn-predict {
+    width:100%; padding:14px; border:none; border-radius:14px;
+    font-size:1.05rem; font-weight:700; color:#fff;
+    background:linear-gradient(135deg, #16a34a, #22c55e);
+    box-shadow:0 4px 16px rgba(22,163,74,.3);
+    transition:all .25s; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+}
+.btn-predict:hover { background:linear-gradient(135deg, #15803d, #16a34a); transform:translateY(-2px); box-shadow:0 8px 24px rgba(22,163,74,.4); }
+.btn-predict:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+.back-link-row { margin-top:20px; text-align:center; }
+.back-link-row a { color:#64748b; font-size:.88rem; text-decoration:none; font-weight:500; }
+.back-link-row a:hover { color:#16a34a; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid px-4">
     <div class="row">
         <div class="col-lg-8 mx-auto">
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-keyboard me-2"></i>Manual Input</h2>
-                <p class="mb-0">Enter field parameters for fertilizer recommendations</p>
+
+            <div class="manual-hero fade-in">
+                <h2><i class="fas fa-keyboard"></i> Manual Input</h2>
+                <p>Enter soil and environmental parameters for AI fertilizer recommendations</p>
             </div>
 
-            <div class="form-card">
-                <form method="POST" action="{{ url_for('Intelligent_Fertilizer_predict') }}" id="predictForm">
-                    <h5 class="mb-3"><i class="fas fa-temperature-high text-primary me-2"></i>Soil Conditions</h5>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-thermometer-half"></i> Soil Temperature (°C)</label>
-                                <input type="number" name="soil_temp" class="form-control" 
-                                       step="0.1" min="0" max="50" value="28.5" required>
-                                <small class="text-muted">Range: 15-40°C</small>
-                            </div>
+            <div class="input-card fade-in">
+                <form method="POST" action="{{ url_for('Intelligent_Fertilizer_predict') }}" id="manualForm" novalidate>
+
+                    <!-- Soil Conditions -->
+                    <div class="input-section-title"><i class="fas fa-seedling soil"></i>Soil Conditions</div>
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label class="fert-label"><i class="fas fa-thermometer-half"></i>Soil Temperature (°C)</label>
+                            <input type="number" name="soil_temp" id="soilTemp" class="fert-input"
+                                   step="0.1" min="0" max="60" value="28.5" required>
+                            <div class="range-hint"><i class="fas fa-circle"></i> Valid range: 0 – 60°C</div>
+                            <div class="validation-msg" id="soilTempMsg"></div>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-tint"></i> Soil Moisture (%)</label>
-                                <input type="number" name="soil_moisture" class="form-control" 
-                                       step="0.1" min="0" max="100" value="65.5" required>
-                                <small class="text-muted">Range: 30-90%</small>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="fert-label"><i class="fas fa-tint"></i>Soil Moisture (%)</label>
+                            <input type="number" name="soil_moisture" id="soilMoist" class="fert-input"
+                                   step="0.1" min="0" max="100" value="65.5" required>
+                            <div class="range-hint"><i class="fas fa-circle"></i> Valid range: 0 – 100%</div>
+                            <div class="validation-msg" id="soilMoistMsg"></div>
                         </div>
                     </div>
 
-                    <h5 class="mb-3"><i class="fas fa-cloud-sun text-info me-2"></i>Environmental Conditions</h5>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-thermometer-half"></i> Air Temperature (°C)</label>
-                                <input type="number" name="air_temp" class="form-control" 
-                                       step="0.1" min="0" max="50" value="30.2" required>
-                            </div>
+                    <div class="input-section-divider"></div>
+
+                    <!-- Environmental Conditions -->
+                    <div class="input-section-title"><i class="fas fa-cloud-sun env"></i>Environmental Conditions</div>
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label class="fert-label"><i class="fas fa-thermometer-half"></i>Air Temperature (°C)</label>
+                            <input type="number" name="air_temp" id="airTemp" class="fert-input"
+                                   step="0.1" min="0" max="50" value="30.2" required>
+                            <div class="range-hint"><i class="fas fa-circle"></i> Valid range: 0 – 50°C</div>
+                            <div class="validation-msg" id="airTempMsg"></div>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-tint"></i> Air Humidity (%)</label>
-                                <input type="number" name="air_humidity" class="form-control" 
-                                       step="0.1" min="0" max="100" value="75.5" required>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="fert-label"><i class="fas fa-tint"></i>Air Humidity (%)</label>
+                            <input type="number" name="air_humidity" id="airHumid" class="fert-input"
+                                   step="0.1" min="0" max="100" value="75.5" required>
+                            <div class="range-hint"><i class="fas fa-circle"></i> Valid range: 0 – 100%</div>
+                            <div class="validation-msg" id="airHumidMsg"></div>
                         </div>
                     </div>
 
-                    <h5 class="mb-3"><i class="fas fa-seedling text-success me-2"></i>Crop Information</h5>
-                    
+                    <div class="input-section-divider"></div>
+
+                    <!-- Crop Information -->
+                    <div class="input-section-title"><i class="fas fa-leaf crop"></i>Crop Information</div>
                     <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-leaf"></i> Growth Stage</label>
-                                <select name="growth_stage" class="form-select" required>
-                                    <option value="">Select Growth Stage</option>
-                                    {% for stage in growth_stages %}
-                                    <option value="{{ stage }}">{{ stage }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="fert-label"><i class="fas fa-spa"></i>Paddy Growth Stage</label>
+                            <select name="growth_stage" id="growthStage" class="fert-select" required>
+                                <option value="">Select Growth Stage</option>
+                                {% for stage in growth_stages %}
+                                <option value="{{ stage }}">{{ stage }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-bullseye"></i> Purpose</label>
-                                <select name="purpose" class="form-select" required>
-                                    <option value="">Select Purpose</option>
-                                    {% for purpose in purposes %}
-                                    <option value="{{ purpose }}">{{ purpose }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="fert-label"><i class="fas fa-bullseye"></i>Purpose of Fertilizer</label>
+                            <select name="purpose" id="purpose" class="fert-select" required>
+                                <option value="">Select Purpose</option>
+                                {% for purpose in purposes %}
+                                <option value="{{ purpose }}">{{ purpose }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
 
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">
-                                <i class="fas fa-magic me-2"></i>Get Recommendations
-                            </button>
-                        </div>
-                    </div>
+                    <button type="submit" class="btn-predict" id="submitBtn">
+                        <i class="fas fa-magic"></i>
+                        Generate Fertilizer Recommendation
+                    </button>
                 </form>
+
+                <div class="back-link-row">
+                    <a href="{{ url_for('Fertilizer_index') }}"><i class="fas fa-arrow-left me-1"></i> Back to Fertilizer Dashboard</a>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const rules = {
+    soilTemp: { min:0, max:60, msgId:'soilTempMsg', label:'Soil Temperature' },
+    soilMoist: { min:0, max:100, msgId:'soilMoistMsg', label:'Soil Moisture' },
+    airTemp: { min:0, max:50, msgId:'airTempMsg', label:'Air Temperature' },
+    airHumid: { min:0, max:100, msgId:'airHumidMsg', label:'Air Humidity' }
+};
+
+function validateField(id) {
+    const input = document.getElementById(id);
+    const rule = rules[id];
+    const msg = document.getElementById(rule.msgId);
+    const val = parseFloat(input.value);
+
+    if (isNaN(val) || val === '') {
+        input.className = 'fert-input invalid';
+        msg.className = 'validation-msg error';
+        msg.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> ' + rule.label + ' is required';
+        return false;
+    }
+    if (val < rule.min || val > rule.max) {
+        input.className = 'fert-input invalid';
+        msg.className = 'validation-msg error';
+        msg.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> Must be between ' + rule.min + ' and ' + rule.max;
+        return false;
+    }
+    input.className = 'fert-input valid';
+    msg.className = 'validation-msg ok';
+    msg.innerHTML = '<i class="fas fa-check-circle me-1"></i> Valid';
+    return true;
+}
+
+Object.keys(rules).forEach(id => {
+    document.getElementById(id).addEventListener('input', () => validateField(id));
+    document.getElementById(id).addEventListener('blur', () => validateField(id));
+});
+
+document.getElementById('manualForm').addEventListener('submit', function(e) {
+    let valid = true;
+    Object.keys(rules).forEach(id => { if (!validateField(id)) valid = false; });
+
+    const gs = document.getElementById('growthStage').value;
+    const pu = document.getElementById('purpose').value;
+    if (!gs || !pu) {
+        valid = false;
+        if (!gs) alert('Please select a Growth Stage');
+        else alert('Please select a Purpose');
+    }
+
+    if (!valid) e.preventDefault();
+});
+</script>
 {% endblock %}

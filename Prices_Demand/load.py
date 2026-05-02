@@ -1,14 +1,14 @@
 import pandas as pd
 
-def load_dataset(path="paddy_price_demand_dataset.csv"):
+def load_dataset(path="paddy_price_dataset_with_rice_type_stronger_timeseries.xlsx"):
+    df = pd.read_excel(path, sheet_name=0)
 
-    df = pd.read_csv(path)
-    # Ensure Date is datetime
     if "Date" in df.columns:
         df["Date"] = pd.to_datetime(df["Date"])
-        df = df.sort_values("Date").reset_index(drop=True)
+        df = df.sort_values(["Region", "Rice_Type", "Date"]).reset_index(drop=True)
     else:
         raise ValueError("Dataset must contain a 'Date' column.")
+
     print(f"Loaded dataset: {df.shape[0]} rows, {df.shape[1]} columns")
     return df
 

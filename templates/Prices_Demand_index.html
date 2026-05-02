@@ -2,176 +2,928 @@
 
 {% block title %}Dashboard - Paddy Predictor{% endblock %}
 
+{% block extra_css %}
+<style>
+    .market-dashboard {
+        --market-ink: #16352e;
+        --market-muted: #647872;
+        --market-line: rgba(22, 53, 46, 0.10);
+        --market-green: #2f7d59;
+        --market-green-soft: #dfead4;
+        --market-gold: #c78a2c;
+        --market-teal: #47849e;
+        --market-berry: #8a3f4d;
+        --market-cream: #f7f5ee;
+    }
+
+    .market-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 30px;
+        padding: 34px;
+        color: #fff;
+        background:
+            radial-gradient(circle at top right, rgba(255, 223, 158, 0.34), transparent 24%),
+            radial-gradient(circle at left bottom, rgba(175, 214, 192, 0.46), transparent 30%),
+            linear-gradient(135deg, #183b34 0%, #245a49 52%, #4d8666 100%);
+        box-shadow: 0 26px 60px rgba(20, 49, 43, 0.22);
+    }
+
+    .market-hero::after {
+        content: "";
+        position: absolute;
+        width: 240px;
+        height: 240px;
+        right: -75px;
+        bottom: -95px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .market-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .market-hero h1 {
+        font-size: clamp(2rem, 3vw, 3.15rem);
+        line-height: 1.04;
+        margin-bottom: 12px;
+        color: #fff;
+    }
+
+    .market-hero p {
+        color: rgba(255, 255, 255, 0.84);
+        max-width: 700px;
+        margin-bottom: 0;
+        font-size: 1rem;
+    }
+
+    .market-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+    }
+
+    .market-meta-card {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+    }
+
+    .market-meta-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 6px;
+    }
+
+    .market-meta-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .metric-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 100%;
+        border-radius: 24px;
+        padding: 22px;
+        border: 1px solid var(--market-line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 245, 238, 0.98));
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+        transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 22px 42px rgba(15, 23, 42, 0.12);
+    }
+
+    .metric-card::before {
+        content: "";
+        position: absolute;
+        top: -20px;
+        right: -10px;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        opacity: 0.18;
+    }
+
+    .metric-card.price::before { background: var(--market-green); }
+    .metric-card.demand::before { background: var(--market-gold); }
+    .metric-card.history::before { background: var(--market-teal); }
+    .metric-card.coverage::before { background: var(--market-berry); }
+
+    .metric-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .metric-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .metric-icon.price { background: linear-gradient(135deg, #2f7d59, #67af85); }
+    .metric-icon.demand { background: linear-gradient(135deg, #c78a2c, #dfb15a); }
+    .metric-icon.history { background: linear-gradient(135deg, #47849e, #77b5c8); }
+    .metric-icon.coverage { background: linear-gradient(135deg, #8a3f4d, #b76d78); }
+
+    .metric-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(22, 53, 46, 0.06);
+        color: var(--market-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .metric-card h3 {
+        margin: 0 0 8px;
+        color: var(--market-ink);
+        font-size: 1.95rem;
+        line-height: 1.05;
+    }
+
+    .metric-card p {
+        margin: 0;
+        color: var(--market-muted);
+        font-weight: 600;
+    }
+
+    .metric-card small {
+        display: block;
+        margin-top: 12px;
+        color: #70847e;
+        font-size: 0.83rem;
+    }
+
+    .panel-card {
+        border-radius: 26px;
+        border: 1px solid var(--market-line);
+        background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98));
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 24px 24px 0;
+    }
+
+    .panel-head h5 {
+        margin: 0;
+        color: var(--market-ink);
+    }
+
+    .panel-copy {
+        color: var(--market-muted);
+        font-size: 0.88rem;
+        margin-top: 4px;
+    }
+
+    .panel-body {
+        padding: 18px 24px 24px;
+    }
+
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .action-card {
+        position: relative;
+        overflow: hidden;
+        display: block;
+        height: 100%;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 22px;
+        padding: 24px;
+        border: 1px solid rgba(22, 53, 46, 0.08);
+        background: linear-gradient(180deg, #ffffff, #f7faf8);
+        transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+
+    .action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 36px rgba(15, 23, 42, 0.10);
+        border-color: rgba(47, 125, 89, 0.20);
+        color: inherit;
+    }
+
+    .action-card.standard::after,
+    .action-card.sensor::after {
+        content: "";
+        position: absolute;
+        inset: auto -30px -50px auto;
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        opacity: 0.12;
+    }
+
+    .action-card.standard::after { background: var(--market-teal); }
+    .action-card.sensor::after { background: var(--market-green); }
+
+    .action-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #fff;
+        margin-bottom: 18px;
+    }
+
+    .action-icon.standard { background: linear-gradient(135deg, #47849e, #77b5c8); }
+    .action-icon.sensor { background: linear-gradient(135deg, #2f7d59, #67af85); }
+
+    .action-card h5 {
+        color: var(--market-ink);
+        margin-bottom: 8px;
+    }
+
+    .action-card p {
+        color: var(--market-muted);
+        margin-bottom: 16px;
+    }
+
+    .action-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+    }
+
+    .chart-shell {
+        height: 330px;
+        position: relative;
+    }
+
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .status-card {
+        border-radius: 22px;
+        padding: 20px;
+        border: 1px solid rgba(22, 53, 46, 0.08);
+        background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(246,248,245,0.98));
+    }
+
+    .status-top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .status-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        color: #fff;
+    }
+
+    .status-icon.lstm { background: linear-gradient(135deg, #2f7d59, #67af85); }
+    .status-icon.xgb { background: linear-gradient(135deg, #c78a2c, #dfb15a); }
+
+    .status-card h6 {
+        margin: 0 0 4px;
+        color: var(--market-ink);
+        font-weight: 800;
+    }
+
+    .status-card p {
+        margin: 0;
+        color: var(--market-muted);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .status-badge.active {
+        background: rgba(34, 197, 94, 0.12);
+        color: #17663f;
+    }
+
+    .status-badge.inactive {
+        background: rgba(239, 68, 68, 0.10);
+        color: #8d2438;
+    }
+
+    .sensor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .sensor-card {
+        border-radius: 22px;
+        padding: 20px;
+        border: 1px solid rgba(22, 53, 46, 0.08);
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,247,242,0.98));
+    }
+
+    .sensor-card h6 {
+        margin: 10px 0 4px;
+        color: var(--market-ink);
+        font-weight: 800;
+    }
+
+    .sensor-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--market-ink);
+        line-height: 1;
+    }
+
+    .sensor-unit {
+        color: var(--market-muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .sensor-card.nitrogen { box-shadow: inset 0 0 0 1px rgba(47, 125, 89, 0.10); }
+    .sensor-card.phosphorus { box-shadow: inset 0 0 0 1px rgba(199, 138, 44, 0.10); }
+    .sensor-card.potassium { box-shadow: inset 0 0 0 1px rgba(71, 132, 158, 0.10); }
+
+    .sensor-headline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .sensor-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .sensor-status.online {
+        background: rgba(34, 197, 94, 0.12);
+        color: #17663f;
+    }
+
+    .sensor-status.offline {
+        background: rgba(239, 68, 68, 0.10);
+        color: #8d2438;
+    }
+
+    .sensor-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 16px;
+        color: var(--market-muted);
+        font-size: 0.88rem;
+    }
+
+    .history-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .history-stat {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 178px;
+        border-radius: 20px;
+        padding: 18px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(249,247,240,0.98));
+        border: 1px solid rgba(22, 53, 46, 0.08);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .history-stat-label {
+        color: var(--market-muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+        line-height: 1.35;
+    }
+
+    .history-stat-value {
+        color: var(--market-ink);
+        font-size: clamp(1.7rem, 2vw, 2.3rem);
+        font-weight: 800;
+        line-height: 1.05;
+        margin-bottom: 8px;
+    }
+
+    .history-stat-note {
+        margin-top: auto;
+        color: var(--market-muted);
+        font-size: 0.86rem;
+        line-height: 1.45;
+        max-width: 18ch;
+    }
+
+    .summary-footer {
+        padding-top: 8px;
+        border-top: 1px solid rgba(22, 53, 46, 0.08);
+        color: var(--market-muted);
+        font-size: 0.92rem;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+
+    .history-table-wrap {
+        overflow-x: auto;
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .history-table th,
+    .history-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid rgba(22, 53, 46, 0.08);
+        white-space: nowrap;
+    }
+
+    .history-table th {
+        color: var(--market-muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+    }
+
+    .history-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .history-chip.standard {
+        background: rgba(71, 132, 158, 0.12);
+        color: #24576c;
+    }
+
+    .history-chip.sensor {
+        background: rgba(47, 125, 89, 0.12);
+        color: #17663f;
+    }
+
+    .empty-state {
+        padding: 24px;
+        border-radius: 22px;
+        background: rgba(247, 245, 238, 0.9);
+        border: 1px dashed rgba(22, 53, 46, 0.16);
+        color: var(--market-muted);
+        text-align: center;
+        font-weight: 600;
+    }
+
+    @media (max-width: 991.98px) {
+        .action-grid,
+        .status-grid,
+        .sensor-grid,
+        .history-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (min-width: 992px) and (max-width: 1399.98px) {
+        .history-stat {
+            min-height: 164px;
+        }
+
+        .history-stat-note {
+            max-width: none;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .market-hero,
+        .metric-card,
+        .panel-card,
+        .action-card,
+        .status-card {
+            border-radius: 22px;
+        }
+
+        .market-hero,
+        .panel-body {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .panel-head {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <!-- Welcome Section -->
+<div class="container-fluid market-dashboard">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="welcome-card">
-                <h1 class="display-6">
-                    <i class="fas fa-seedling text-success me-2"></i>
-                    Welcome to Paddy Price & Demand Predictor
-                </h1>
-                <p class="lead">Advanced time-series forecasting with sentiment analysis and sensor integration</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card primary">
-                <div class="stat-icon">
+            <div class="market-hero">
+                <div class="market-kicker">
                     <i class="fas fa-chart-line"></i>
+                    Market Intelligence Dashboard
                 </div>
-                <div class="stat-content">
-                    <h3>₨ {{ "%.2f"|format(historical_data.price_stats.mean) if historical_data.price_stats else '0.00' }}</h3>
-                    <p>Average Price (LKR/kg)</p>
-                    <small>Last 30 days</small>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card success">
-                <div class="stat-icon">
-                    <i class="fas fa-weight-hanging"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ "%.0f"|format(historical_data.demand_stats.mean) if historical_data.demand_stats else '0' }}</h3>
-                    <p>Average Demand (Tons)</p>
-                    <small>Per day</small>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card info">
-                <div class="stat-icon">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ historical_data.date_range.total_days if historical_data.date_range else '0' }}</h3>
-                    <p>Days of Data</p>
-                    <small>{{ historical_data.date_range.start if historical_data.date_range else 'N/A' }} to {{ historical_data.date_range.end if historical_data.date_range else 'N/A' }}</small>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stat-card warning">
-                <div class="stat-icon">
-                    <i class="fas fa-microchip"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ historical_data.regions|length if historical_data.regions else '0' }}</h3>
-                    <p>Regions Covered</p>
-                    <small>{{ historical_data.regions|join(', ') if historical_data.regions else 'N/A' }}</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <a href="{{ url_for('Prices_Demand_predict') }}" class="quick-action-card">
-                                <i class="fas fa-chart-line fa-3x mb-3 text-primary"></i>
-                                <h5>Standard Prediction</h5>
-                                <p class="text-muted">Predict prices and demand using historical data</p>
-                                <span class="btn btn-outline-primary btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <a href="{{ url_for('Prices_Demand_sensor_predict') }}" class="quick-action-card">
-                                <i class="fas fa-microchip fa-3x mb-3 text-success"></i>
-                                <h5>Sensor-Based Prediction</h5>
-                                <p class="text-muted">Use NPK sensor readings for accurate predictions</p>
-                                <span class="btn btn-outline-success btn-sm">Go <i class="fas fa-arrow-right ms-1"></i></span>
-                            </a>
-                        </div>
-                         
+                <h1>Track Paddy Market Momentum With A Cleaner Command View</h1>
+                <p>Review recent price movement, buyer demand, forecast coverage, and model readiness before moving into standard or sensor-assisted prediction.</p>
+                <div class="market-meta-grid">
+                    <div class="market-meta-card">
+                        <div class="market-meta-label">Historical Window</div>
+                        <div class="market-meta-value">{{ historical_data.date_range.start if historical_data.date_range else 'N/A' }}</div>
+                    </div>
+                    <div class="market-meta-card">
+                        <div class="market-meta-label">Latest Coverage</div>
+                        <div class="market-meta-value">{{ historical_data.date_range.total_days if historical_data.date_range else '0' }} days</div>
+                    </div>
+                    <div class="market-meta-card">
+                        <div class="market-meta-label">Regions Active</div>
+                        <div class="market-meta-value">{{ historical_data.regions|length if historical_data.regions else '0' }}</div>
+                    </div>
+                    <div class="market-meta-card">
+                        <div class="market-meta-label">Forecast Modes</div>
+                        <div class="market-meta-value">Standard + Sensor</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Trends -->
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Recent Price Trend</h5>
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card price">
+                <div class="metric-top">
+                    <div class="metric-icon price">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-wave-square"></i> Price</div>
                 </div>
-                <div class="card-body">
-                    <canvas id="priceChart"></canvas>
+                <h3>Rs. {{ "%.2f"|format(historical_data.price_stats.mean) if historical_data.price_stats else '0.00' }}</h3>
+                <p>Average Paddy Price</p>
+                <small>Range {{ historical_data.price_stats.min|round(2) if historical_data.price_stats else '0.00' }} to {{ historical_data.price_stats.max|round(2) if historical_data.price_stats else '0.00' }} LKR/kg</small>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card demand">
+                <div class="metric-top">
+                    <div class="metric-icon demand">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-basket-shopping"></i> Demand</div>
+                </div>
+                <h3>{{ "%.0f"|format(historical_data.demand_stats.mean) if historical_data.demand_stats else '0' }}</h3>
+                <p>Average Daily Demand</p>
+                <small>Range {{ historical_data.demand_stats.min|round(0) if historical_data.demand_stats else '0' }} to {{ historical_data.demand_stats.max|round(0) if historical_data.demand_stats else '0' }} tons</small>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card history">
+                <div class="metric-top">
+                    <div class="metric-icon history">
+                        <i class="fas fa-calendar-range"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-clock-rotate-left"></i> History</div>
+                </div>
+                <h3>{{ historical_data.date_range.total_days if historical_data.date_range else '0' }}</h3>
+                <p>Days Of Market Data</p>
+                <small>{{ historical_data.date_range.start if historical_data.date_range else 'N/A' }} to {{ historical_data.date_range.end if historical_data.date_range else 'N/A' }}</small>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card coverage">
+                <div class="metric-top">
+                    <div class="metric-icon coverage">
+                        <i class="fas fa-map-location-dot"></i>
+                    </div>
+                    <div class="metric-tag"><i class="fas fa-layer-group"></i> Coverage</div>
+                </div>
+                <h3>{{ historical_data.regions|length if historical_data.regions else '0' }}</h3>
+                <p>Regions Covered</p>
+                <small>{{ historical_data.regions|join(', ') if historical_data.regions else 'No region data available' }}</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-bolt me-2 text-warning"></i>Prediction Paths</h5>
+                        <div class="panel-copy">Choose a forecast flow based on whether you want a pure market-history prediction or a live NPK-assisted forecast.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="action-grid">
+                        <a href="{{ url_for('Prices_Demand_predict') }}" class="action-card standard">
+                            <div class="action-icon standard">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h5>Standard Prediction</h5>
+                            <p>Generate a clean forecast using historical price and demand behavior only.</p>
+                            <span class="action-link text-primary">Open Standard Forecast <i class="fas fa-arrow-right"></i></span>
+                        </a>
+                        <a href="{{ url_for('Prices_Demand_sensor_predict') }}" class="action-card sensor">
+                            <div class="action-icon sensor">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <h5>Sensor-Based Prediction</h5>
+                            <p>Blend live NPK sensor readings into the forecast for a more context-aware outlook.</p>
+                            <span class="action-link text-success">Open Sensor Forecast <i class="fas fa-arrow-right"></i></span>
+                        </a>
+                        <a href="{{ url_for('Prices_Demand_history') }}" class="action-card standard">
+                            <div class="action-icon standard">
+                                <i class="fas fa-clock-rotate-left"></i>
+                            </div>
+                            <h5>Forecast History</h5>
+                            <p>Review previously saved market forecasts, recommendation dates, and sensor-assisted runs.</p>
+                            <span class="action-link text-primary">Open History <i class="fas fa-arrow-right"></i></span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i>Recent Demand Trend</h5>
+
+        <div class="col-lg-5">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-robot me-2" style="color:#6b7280;"></i>Model Status</h5>
+                        <div class="panel-copy">Current readiness of the forecasting stack used by the dashboard and forecast screens.</div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <canvas id="demandChart"></canvas>
+                <div class="panel-body">
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-top">
+                                <div class="status-icon lstm">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                                <div>
+                                    <h6>LSTM Price Model</h6>
+                                    <p>Window size: 21 days</p>
+                                </div>
+                            </div>
+                            <span class="status-badge {% if models_loaded %}active{% else %}inactive{% endif %}">
+                                <i class="fas {% if models_loaded %}fa-check-circle{% else %}fa-circle-xmark{% endif %}"></i>
+                                {% if models_loaded %}Active{% else %}Not Loaded{% endif %}
+                            </span>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-top">
+                                <div class="status-icon xgb">
+                                    <i class="fas fa-tree"></i>
+                                </div>
+                                <div>
+                                    <h6>XGBoost Demand Model</h6>
+                                    <p>Multi-feature demand estimator</p>
+                                </div>
+                            </div>
+                            <span class="status-badge {% if models_loaded %}active{% else %}inactive{% endif %}">
+                                <i class="fas {% if models_loaded %}fa-check-circle{% else %}fa-circle-xmark{% endif %}"></i>
+                                {% if models_loaded %}Active{% else %}Not Loaded{% endif %}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Model Status -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-robot me-2 text-purple"></i>Model Status</h5>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-microchip me-2 text-success"></i>Live NPK Readings</h5>
+                        <div class="panel-copy">Current nitrogen, phosphorus, and potassium values from the connected live sensor feed.</div>
+                    </div>
+                    <div id="sensorStatusBadge" class="sensor-status {% if live_sensor and live_sensor.connected %}online{% else %}offline{% endif %}">
+                        <i class="fas {% if live_sensor and live_sensor.connected %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                        <span>{% if live_sensor and live_sensor.connected %}Live Connected{% else %}Using Fallback Values{% endif %}</span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="model-status-item">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-brain fa-2x me-3 text-primary"></i>
-                                    <div>
-                                        <h6 class="mb-1">LSTM Price Model</h6>
-                                        <p class="mb-0 text-muted">
-                                            {% if models_loaded %}
-                                            <span class="badge bg-success">Active</span> Window: 21 days
-                                            {% else %}
-                                            <span class="badge bg-danger">Not Loaded</span>
-                                            {% endif %}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="panel-body">
+                    <div class="sensor-grid">
+                        <div class="sensor-card nitrogen">
+                            <div class="metric-tag"><i class="fas fa-leaf"></i> Nitrogen</div>
+                            <h6>N Reading</h6>
+                            <div class="sensor-value" id="sensorNitrogen">{{ '%.1f'|format(live_sensor['values']['nitrogen']) if live_sensor else '520.0' }}</div>
+                            <div class="sensor-unit">mg/kg</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="model-status-item">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-tree fa-2x me-3 text-success"></i>
-                                    <div>
-                                        <h6 class="mb-1">XGBoost Demand Model</h6>
-                                        <p class="mb-0 text-muted">
-                                            {% if models_loaded %}
-                                            <span class="badge bg-success">Active</span> Features: 50+
-                                            {% else %}
-                                            <span class="badge bg-danger">Not Loaded</span>
-                                            {% endif %}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="sensor-card phosphorus">
+                            <div class="metric-tag"><i class="fas fa-seedling"></i> Phosphorus</div>
+                            <h6>P Reading</h6>
+                            <div class="sensor-value" id="sensorPhosphorus">{{ '%.1f'|format(live_sensor['values']['phosphorus']) if live_sensor else '10.0' }}</div>
+                            <div class="sensor-unit">mg/kg</div>
                         </div>
+                        <div class="sensor-card potassium">
+                            <div class="metric-tag"><i class="fas fa-flask"></i> Potassium</div>
+                            <h6>K Reading</h6>
+                            <div class="sensor-value" id="sensorPotassium">{{ '%.1f'|format(live_sensor['values']['potassium']) if live_sensor else '10.0' }}</div>
+                            <div class="sensor-unit">mg/kg</div>
+                        </div>
+                    </div>
+                    <div class="sensor-meta">
+                        <span><strong>Port:</strong> <span id="sensorPort">{{ live_sensor.port if live_sensor else 'COM7' }}</span></span>
+                        <span><strong>Baud:</strong> <span id="sensorBaud">{{ live_sensor.baudrate if live_sensor else '115200' }}</span></span>
+                        <span><strong>Last Update:</strong> <span id="sensorLastUpdate">{{ live_sensor.last_update if live_sensor and live_sensor.last_update else 'No live update yet' }}</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-database me-2 text-primary"></i>Saved Forecast Summary</h5>
+                        <div class="panel-copy">Recent prediction activity loaded from the database for the current signed-in user.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="history-grid">
+                        <div class="history-stat">
+                            <div class="history-stat-label">Saved Forecasts</div>
+                            <div class="history-stat-value">{{ dashboard_data.summary.total_predictions }}</div>
+                            <div class="history-stat-note">Stored runs for this account</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-label">Sensor Runs</div>
+                            <div class="history-stat-value">{{ dashboard_data.summary.sensor_predictions }}</div>
+                            <div class="history-stat-note">Live NPK assisted forecasts</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-label">Latest Avg Price</div>
+                            <div class="history-stat-value">{{ '%.2f'|format(dashboard_data.summary.latest_avg_price) if dashboard_data.summary.latest_avg_price is not none else '0.00' }}</div>
+                            <div class="history-stat-note">LKR/kg from the latest saved run</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-label">Latest Avg Demand</div>
+                            <div class="history-stat-value">{{ '%.0f'|format(dashboard_data.summary.latest_avg_demand) if dashboard_data.summary.latest_avg_demand is not none else '0' }}</div>
+                            <div class="history-stat-note">Tons from the latest saved run</div>
+                        </div>
+                    </div>
+                    <div class="summary-footer">
+                        <strong>Last saved forecast:</strong>
+                        {{ dashboard_data.summary.last_prediction_at if dashboard_data.summary.last_prediction_at else 'No saved forecasts yet' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-table-list me-2 text-info"></i>Recent Database Records</h5>
+                        <div class="panel-copy">Latest saved market forecasts, including whether they were standard or sensor-assisted runs.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if dashboard_data.recent_predictions %}
+                    <div class="history-table-wrap">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Saved At</th>
+                                    <th>Type</th>
+                                    <th>Date Range</th>
+                                    <th>Avg Price</th>
+                                    <th>Avg Demand</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in dashboard_data.recent_predictions %}
+                                <tr>
+                                    <td>{{ item.timestamp }}</td>
+                                    <td>
+                                        <span class="history-chip {% if item.prediction_type == 'Sensor-Based' %}sensor{% else %}standard{% endif %}">
+                                            {{ item.prediction_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ item.start_date }} to {{ item.end_date }}</td>
+                                    <td>Rs. {{ '%.2f'|format(item.avg_price) }}</td>
+                                    <td>{{ '%.0f'|format(item.avg_demand) }} tons</td>
+                                    <td>{{ item.price_trend or 'N/A' }} / {{ item.demand_trend or 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        No Prices &amp; Demand records are stored yet. Run a standard or sensor-based forecast to populate this dashboard.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-chart-line me-2 text-primary"></i>Recent Price Trend</h5>
+                        <div class="panel-copy">Smoothed price movement from the recent market window used as dashboard context.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-shell">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <h5><i class="fas fa-chart-bar me-2 text-success"></i>Recent Demand Trend</h5>
+                        <div class="panel-copy">Daily demand movement over the latest observed period before forecast generation.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-shell">
+                        <canvas id="demandChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -182,42 +934,124 @@
 
 {% block extra_js %}
 <script>
-    // Price Chart
+    const recentDates = {{ historical_data.get('recent_dates', [])|tojson }};
+    const recentPrices = {{ historical_data.get('recent_prices', [])|tojson }};
+    const recentDemand = {{ historical_data.get('recent_demand', historical_data.get('recent_demands', []))|tojson }};
+
+    async function refreshLiveSensorDashboard() {
+        try {
+            const response = await fetch("{{ url_for('api_latest_sensor') }}", {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+            if (!response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            if (!payload.success || !payload.sensor) {
+                return;
+            }
+
+            const sensor = payload.sensor;
+            const values = sensor.values || {};
+            document.getElementById('sensorNitrogen').textContent = Number(values.nitrogen ?? 520).toFixed(1);
+            document.getElementById('sensorPhosphorus').textContent = Number(values.phosphorus ?? 10).toFixed(1);
+            document.getElementById('sensorPotassium').textContent = Number(values.potassium ?? 10).toFixed(1);
+            document.getElementById('sensorPort').textContent = sensor.port || 'COM7';
+            document.getElementById('sensorBaud').textContent = sensor.baudrate || '115200';
+            document.getElementById('sensorLastUpdate').textContent = sensor.last_update || 'No live update yet';
+
+            const badge = document.getElementById('sensorStatusBadge');
+            const connected = Boolean(sensor.connected);
+            badge.className = `sensor-status ${connected ? 'online' : 'offline'}`;
+            badge.innerHTML = `<i class="fas ${connected ? 'fa-circle-check' : 'fa-circle-xmark'}"></i><span>${connected ? 'Live Connected' : 'Using Fallback Values'}</span>`;
+        } catch (error) {
+            console.error('Sensor refresh failed', error);
+        }
+    }
+
+    refreshLiveSensorDashboard();
+    setInterval(refreshLiveSensorDashboard, 15000);
+
     const priceCtx = document.getElementById('priceChart').getContext('2d');
+    const priceGradient = priceCtx.createLinearGradient(0, 0, 0, 320);
+    priceGradient.addColorStop(0, 'rgba(47, 125, 89, 0.32)');
+    priceGradient.addColorStop(1, 'rgba(47, 125, 89, 0.02)');
+
     new Chart(priceCtx, {
         type: 'line',
         data: {
-            labels: {{ historical_data.recent_dates|tojson if historical_data.recent_dates else [] }},
+            labels: recentDates,
             datasets: [{
                 label: 'Price (LKR/kg)',
-                data: {{ historical_data.recent_prices|tojson if historical_data.recent_prices else [] }},
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
+                data: recentPrices,
+                borderColor: '#2f7d59',
+                backgroundColor: priceGradient,
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#2f7d59',
+                tension: 0.35
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#6b7d77' }
+                },
+                y: {
+                    grid: { color: 'rgba(22, 53, 46, 0.08)' },
+                    ticks: { color: '#6b7d77' }
+                }
+            }
         }
     });
 
-    // Demand Chart
     const demandCtx = document.getElementById('demandChart').getContext('2d');
+    const demandGradient = demandCtx.createLinearGradient(0, 0, 0, 320);
+    demandGradient.addColorStop(0, 'rgba(199, 138, 44, 0.32)');
+    demandGradient.addColorStop(1, 'rgba(199, 138, 44, 0.04)');
+
     new Chart(demandCtx, {
-        type: 'bar',
+        type: 'line',
         data: {
-            labels: {{ historical_data.recent_dates|tojson if historical_data.recent_dates else [] }},
+            labels: recentDates,
             datasets: [{
                 label: 'Demand (Tons)',
-                data: {{ historical_data.recent_demand|tojson if historical_data.recent_demand else [] }},
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgb(54, 162, 235)',
-                borderWidth: 1
+                data: recentDemand,
+                backgroundColor: demandGradient,
+                borderColor: '#c78a2c',
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#c78a2c',
+                tension: 0.35
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#6b7d77' }
+                },
+                y: {
+                    grid: { color: 'rgba(22, 53, 46, 0.08)' },
+                    ticks: { color: '#6b7d77' }
+                }
+            }
         }
     });
 </script>

@@ -93,6 +93,22 @@ class LiveSensorMonitor:
 
         # temporary buffer for multi-line packets
         self.partial_values = {}
+        self.disconnect_timeout_seconds = 3.0
+        self.last_signal_at = None
+
+    def _connection_alive(self):
+        return bool(
+            self.running
+            and self.ser
+            and self.ser.is_open
+            and self._has_recent_signal()
+        )
+
+    def _has_recent_signal(self):
+        return bool(
+            self.last_signal_at is not None
+            and (time.monotonic() - self.last_signal_at) <= self.disconnect_timeout_seconds
+        )
 
     def connect(self):
         try:
@@ -103,6 +119,7 @@ class LiveSensorMonitor:
 
             self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
             self.running = True
+            self.last_signal_at = None
 
             with self.lock:
                 self.latest["connected"] = True
@@ -140,6 +157,7 @@ class LiveSensorMonitor:
         except Exception:
             pass
 
+        self.last_signal_at = None
         with self.lock:
             self.latest["connected"] = False
 
@@ -219,6 +237,7 @@ class LiveSensorMonitor:
                     print(f"[SENSOR] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} -> {text}")
 
                     parsed = self.parse_line(text)
+                    self.last_signal_at = time.monotonic()
 
                     with self.lock:
                         self.latest["last_raw"] = str(raw)
@@ -236,6 +255,9 @@ class LiveSensorMonitor:
                     # If separator line arrived, also commit what we have
                     if "----" in text or "npk values" in text.lower():
                         self.commit_partial_values()
+                else:
+                    with self.lock:
+                        self.latest["connected"] = self._connection_alive()
 
             except Exception:
                 print("[SENSOR] Serial read error:")
@@ -255,6 +277,8 @@ class LiveSensorMonitor:
                 "last_update": self.latest["last_update"],
                 "values": dict(self.latest["values"])
             }
+
+        payload["connected"] = self._connection_alive()
 
         payload["values"]["nitrogen"] = payload["values"]["nitrogen"] if payload["values"]["nitrogen"] is not None else 520.0
         payload["values"]["phosphorus"] = payload["values"]["phosphorus"] if payload["values"]["phosphorus"] is not None else 10.0

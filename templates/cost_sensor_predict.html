@@ -1,247 +1,602 @@
 {% extends "base.html" %}
+{% block title %}Sensor Estimation — Farming Cost{% endblock %}
 
-{% block title %}Sensor-Based Estimate - FarmCost Estimator{% endblock %}
+{% block extra_css %}
+<style>
+/* ============================================================
+   SENSOR-BASED INPUT PAGE — PREMIUM GREEN DASHBOARD
+   ============================================================ */
+@keyframes fadeUp   {from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse3   {0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 12px rgba(34,197,94,0)}}
+@keyframes barFill  {from{width:0%}to{width:var(--bar-w,0%)}}
+@keyframes scanL    {0%{top:0}100%{top:100%}}
+@keyframes blink    {0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes float    {0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.anim-d1{animation-delay:.1s} .anim-d2{animation-delay:.2s}
+.anim-d3{animation-delay:.3s} .anim-d4{animation-delay:.4s}
+.au{opacity:0;animation:fadeUp .55s ease forwards;}
+
+/* ---------- Page Hero ---------- */
+.sp-hero {
+  background:linear-gradient(135deg,#064e3b 0%,#047857 50%,#059669 100%);
+  border-radius:22px; padding:36px 44px; color:#fff;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:28px; position:relative; overflow:hidden;
+  box-shadow:0 14px 40px rgba(6,78,59,.3);
+}
+.sp-hero::before{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at 80% 50%,rgba(167,243,208,.1) 0%,transparent 60%);
+  pointer-events:none;
+}
+.sp-hero-left h1 {font-size:2rem;font-weight:900;margin-bottom:8px;letter-spacing:-0.5px;}
+.sp-hero-left p  {font-size:1rem;opacity:.85;margin:0;line-height:1.6;max-width:500px;}
+.sp-hero-right   {display:flex;gap:12px;align-items:center;}
+.sp-back-btn {
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.15); backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.25); color:#fff;
+  padding:10px 20px; border-radius:12px; font-weight:700; font-size:.9rem;
+  text-decoration:none; transition:all .25s;
+}
+.sp-back-btn:hover{background:rgba(255,255,255,.28);color:#fff;}
+
+/* --- scan line decoration --- */
+.sp-hero::after{
+  content:''; position:absolute; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  animation:scanL 3s linear infinite; pointer-events:none;
+}
+
+/* ---------- Sensor Live Dashboard Cards ---------- */
+.sensor-dash-grid {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:20px;
+  margin-bottom:28px;
+}
+.sdc {
+  background:#fff; border-radius:22px; border:1px solid #e2e8f0;
+  padding:28px; position:relative; overflow:hidden;
+  box-shadow:0 4px 16px rgba(0,0,0,.04); transition:all .3s;
+}
+.sdc:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.09);}
+
+/* Colour left strip */
+.sdc::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;border-radius:4px 0 0 4px;}
+.sdc-gps-lat::before  {background:linear-gradient(180deg,#3b82f6,#60a5fa);}
+.sdc-gps-lon::before  {background:linear-gradient(180deg,#6366f1,#818cf8);}
+.sdc-temp::before     {background:linear-gradient(180deg,#f59e0b,#fbbf24);}
+.sdc-humid::before    {background:linear-gradient(180deg,#06b6d4,#22d3ee);}
+
+.sdc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.sdc-info  {display:flex;align-items:center;gap:12px;}
+.sdc-icon  {
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem; flex-shrink:0;
+}
+.sdc-gps-lat .sdc-icon  {background:#eff6ff;color:#2563eb;}
+.sdc-gps-lon .sdc-icon  {background:#eef2ff;color:#4f46e5;}
+.sdc-temp    .sdc-icon  {background:#fffbeb;color:#d97706;}
+.sdc-humid   .sdc-icon  {background:#ecfeff;color:#0891b2;}
+
+.sdc-info h5 {font-size:1rem;font-weight:800;color:#0f172a;margin:0;}
+.sdc-info p  {font-size:.8rem;color:#64748b;margin:0;}
+
+/* Status pill on sensor card */
+.sdc-status{
+  padding:5px 12px;border-radius:50px;font-size:.75rem;font-weight:700;
+}
+.sdc-status.normal   {background:#f0fdf4;color:#15803d;}
+.sdc-status.warning  {background:#fffbeb;color:#d97706;}
+.sdc-status.critical {background:#fef2f2;color:#dc2626;}
+.sdc-status.offline  {background:#f1f5f9;color:#64748b;}
+
+/* Big reading value */
+.sdc-value{
+  font-size:3rem;font-weight:900;color:#0f172a;
+  font-variant-numeric:tabular-nums;
+  line-height:1; margin-bottom:4px;
+  transition:color .4s;
+}
+.sdc-value.normal   {color:#16a34a;}
+.sdc-value.warning  {color:#d97706;}
+.sdc-value.critical {color:#dc2626;}
+.sdc-value.offline  {color:#94a3b8;}
+
+.sdc-unit {font-size:1.3rem;font-weight:600;color:#64748b;}
+.sdc-last {font-size:.78rem;color:#94a3b8;margin-top:6px;}
+
+/* Progress bar */
+.sdc-bar-wrap{margin-top:16px;}
+.sdc-bar-label{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;color:#64748b;margin-bottom:6px;}
+.sdc-bar-track{height:8px;background:#f1f5f9;border-radius:8px;overflow:hidden;}
+.sdc-bar-fill {height:100%;border-radius:8px;width:0%;transition:width .8s ease,background .5s;}
+.sdc-gps-lat .sdc-bar-fill  {background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+.sdc-gps-lon .sdc-bar-fill  {background:linear-gradient(90deg,#6366f1,#818cf8);}
+.sdc-temp    .sdc-bar-fill  {background:linear-gradient(90deg,#f59e0b,#ef4444);}
+.sdc-humid   .sdc-bar-fill  {background:linear-gradient(90deg,#06b6d4,#3b82f6);}
+
+/* Sensor connection banner */
+.sensor-conn-bar {
+  background:#fff; border-radius:16px; border:1px solid #e2e8f0;
+  padding:16px 24px; margin-bottom:24px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.03); flex-wrap:wrap; gap:12px;
+}
+.scb-left{display:flex;align-items:center;gap:12px;}
+.scb-pdot{width:12px;height:12px;border-radius:50%;background:#ef4444;transition:background .3s;}
+.scb-pdot.live{background:#4ade80;animation:pulse3 2s infinite;}
+.scb-text h5{font-size:.95rem;font-weight:800;color:#0f172a;margin:0;}
+.scb-text p {font-size:.8rem;color:#64748b;margin:0;}
+
+/* GPS fallback toast */
+.gps-toast {
+  position:fixed;bottom:32px;right:32px;
+  background:#0f172a;color:#fff;
+  padding:18px 26px;border-radius:16px;z-index:9999;
+  display:flex;align-items:center;gap:16px;min-width:320px;
+  box-shadow:0 16px 48px rgba(0,0,0,.25);
+  transform:translateY(140%);transition:transform .45s cubic-bezier(.175,.885,.32,1.275);
+}
+.gps-toast.show{transform:translateY(0);}
+.gps-toast .gt-icon{font-size:2rem;color:#4ade80;}
+.gps-toast .gt-body .gt-title{font-weight:800;font-size:.95rem;margin-bottom:2px;}
+.gps-toast .gt-body .gt-sub  {font-size:.8rem;color:rgba(255,255,255,.6);}
+
+/* ---------- Input Form Panels ---------- */
+.form-section{
+  background:#fff;border-radius:20px;border:1px solid #e2e8f0;
+  padding:32px;margin-bottom:24px;
+  box-shadow:0 2px 8px rgba(0,0,0,.03);
+}
+.fs-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #f1f5f9;}
+.fs-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.fs-icon.gps    {background:#eff6ff;color:#2563eb;}
+.fs-icon.farm   {background:#f0fdf4;color:#16a34a;}
+.fs-icon.finance{background:#fefce8;color:#ca8a04;}
+.fs-title{font-size:1.15rem;font-weight:800;color:#0f172a;margin:0;}
+
+.label-modern{font-size:.82rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.input-modern,.select-modern{
+  background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;
+  padding:12px 16px;font-size:.95rem;color:#0f172a;font-weight:500;
+  transition:all .2s;width:100%;
+}
+.input-modern:focus,.select-modern:focus{
+  background:#fff;border-color:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.1);outline:none;
+}
+input[readonly].input-modern{
+  background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+  border-color:#86efac;color:#0f172a;cursor:not-allowed;
+}
+
+.submit-btn-green{
+  background:linear-gradient(135deg,#15803d,#16a34a,#22c55e);
+  border:none;border-radius:14px;padding:16px;
+  font-size:1.1rem;font-weight:800;color:#fff;width:100%;
+  transition:all .3s;box-shadow:0 8px 24px rgba(22,163,74,.3);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  letter-spacing:.3px;
+}
+.submit-btn-green:hover:not(:disabled){
+  transform:translateY(-2px);box-shadow:0 14px 32px rgba(22,163,74,.4);
+  background:linear-gradient(135deg,#166534,#15803d,#16a34a);
+}
+.submit-btn-green:disabled{background:#94a3b8;cursor:not-allowed;box-shadow:none;transform:none;}
+
+@media(max-width:992px){.sensor-dash-grid{grid-template-columns:1fr;}}
+@media(max-width:640px){.sp-hero{padding:24px;}.sp-hero-left h1{font-size:1.6rem;}}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Cost Estimation</h2>
-                <p class="mb-0">Use environmental sensor data for more accurate estimates</p>
-            </div>
+<div class="container-fluid px-3 px-md-4 pb-5">
 
-            <div class="form-card">
-                <div class="alert alert-info mb-4">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Sensor Mode:</strong> Enter values manually or connect to sensors for real-time data
-                </div>
-
-                <form method="POST" action="{{ url_for('cost_sensor_predict') }}" id="sensorForm">
-                    <!-- GPS Coordinates -->
-                    <h5 class="mb-3"><i class="fas fa-satellite text-primary me-2"></i>GPS Coordinates</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-map-pin"></i> Latitude</label>
-                                <div class="input-group">
-                                    <input type="number" name="latitude" id="latitude" class="form-control" step="0.0001" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="getGPS()">
-                                        <i class="fas fa-location-dot"></i> Get GPS
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-map-pin"></i> Longitude</label>
-                                <div class="input-group">
-                                    <input type="number" name="longitude" id="longitude" class="form-control" step="0.0001" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="getGPS()">
-                                        <i class="fas fa-location-dot"></i> Get GPS
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Environmental Sensors -->
-                    <h5 class="mb-3"><i class="fas fa-cloud-sun text-info me-2"></i>Environmental Sensors</h5>
-                    <div id="sensorWarnings" class="mb-3"></div>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-thermometer-half"></i> Temperature (°C)</label>
-                                <div class="input-group">
-                                    <input type="number" name="temperature" id="temperature" class="form-control" step="0.1" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('temperature')">
-                                        <i class="fas fa-sync"></i> Read
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
-                                <div class="input-group">
-                                    <input type="number" name="humidity" id="humidity" class="form-control" step="0.1" readonly required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="readSensor('humidity')">
-                                        <i class="fas fa-sync"></i> Read
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-cloud-rain"></i> Rainfall (mm)</label>
-                                <input type="number" name="rainfall" class="form-control" step="0.1" readonly required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Farm Details -->
-                    <h5 class="mb-3 mt-4"><i class="fas fa-tractor text-success me-2"></i>Farm Details</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-calendar"></i> Year</label>
-                                <input type="number" name="year" class="form-control" value="{{ current_year }}" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-cloud-sun"></i> Season</label>
-                                <select name="season" class="form-select" required>
-                                    {% for season in seasons %}
-                                    <option value="{{ season }}">{{ season }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-mountain"></i> Soil Type</label>
-                                <select name="soil_type" class="form-select" required>
-                                    {% for soil in soil_types %}
-                                    <option value="{{ soil }}">{{ soil }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-seedling"></i> Seed Type</label>
-                                <select name="seed_type" class="form-select" required>
-                                    {% for seed in seed_types %}
-                                    <option value="{{ seed }}">{{ seed }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-chart-area"></i> Area (acres)</label>
-                                <input type="number" name="area" class="form-control" step="0.1" value="2.5" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cost Breakdown (same as standard form) -->
-                    <h5 class="mb-3 mt-4"><i class="fas fa-rupee-sign text-warning me-2"></i>Cost Breakdown (LKR)</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Seed Cost</label>
-                                <input type="number" name="seed_cost" class="form-control" step="100" value="8000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Fertilizer Cost</label>
-                                <input type="number" name="fertilizer_cost" class="form-control" step="100" value="15000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Pesticide Cost</label>
-                                <input type="number" name="pesticide_cost" class="form-control" step="100" value="4000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Labor Cost</label>
-                                <input type="number" name="labor_cost" class="form-control" step="100" value="25000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Water Cost</label>
-                                <input type="number" name="water_cost" class="form-control" step="100" value="5000" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Machinery Cost</label>
-                                <input type="number" name="machinery_cost" class="form-control" step="100" value="10000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Other Costs</label>
-                                <input type="number" name="other_costs" class="form-control" step="100" value="2000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-success btn-lg w-100">
-                                <i class="fas fa-microchip me-2"></i>Estimate with Sensor Data
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Sensor Tips -->
-            
-        </div>
+  <!-- Hero -->
+  <div class="sp-hero au anim-d1">
+    <div class="sp-hero-left">
+      <h1><i class="fas fa-satellite-dish me-3"></i>Live Telemetry Estimation</h1>
+      <p>Real-time sensor data — GPS, temperature, humidity — streams directly into the cost estimation engine. Missing GPS will auto-route to browser geolocation.</p>
     </div>
-</div>
+    <div class="sp-hero-right">
+      <a href="{{ url_for('cost_index') }}" class="sp-back-btn">
+        <i class="fas fa-arrow-left"></i> Dashboard
+      </a>
+    </div>
+  </div>
 
-<script>
-function getGPS() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('latitude').value = position.coords.latitude.toFixed(4);
-            document.getElementById('longitude').value = position.coords.longitude.toFixed(4);
-            showToast('GPS coordinates updated!', 'success');
-        }, function(error) {
-            showToast('Error getting GPS: ' + error.message, 'danger');
-        });
-    } else {
-        showToast('Geolocation not supported', 'warning');
-    }
-}
 
-function readSensor(sensor) {
-    // Simulate sensor readings
-    let value;
-    if (sensor === 'temperature') {
-        value = (25 + Math.random() * 10).toFixed(1);
-        document.getElementById('temperature').value = value;
-    } else if (sensor === 'humidity') {
-        value = (70 + Math.random() * 20).toFixed(1);
-        document.getElementById('humidity').value = value;
-    }
-    showToast(`${sensor.charAt(0).toUpperCase() + sensor.slice(1)} reading: ${value}`, 'info');
-}
+  <!-- Sensor connection bar -->
+  <div class="sensor-conn-bar au anim-d2">
+    <div class="scb-left">
+      <div class="scb-pdot" id="scbDot"></div>
+      <div class="scb-text">
+        <h5 id="scbTitle">Sensor Offline</h5>
+        <p id="scbSub">Connect your farming sensor to begin receiving live data.</p>
+      </div>
+    </div>
+    <span id="scbBadge" style="padding:6px 16px;border-radius:50px;font-size:.78rem;font-weight:700;background:#f1f5f9;color:#64748b;">AWAITING</span>
+  </div>
 
-function showToast(message, type) {
-    const toast = $(`
-        <div class="toast align-items-center text-white bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert">
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
+  <!-- Live Sensor Dashcards -->
+  <div class="sensor-dash-grid au anim-d3">
+
+    <div class="sdc sdc-gps-lat">
+      <div class="sdc-header">
+        <div class="sdc-info">
+          <div class="sdc-icon">🌐</div>
+          <div>
+            <h5>Latitude</h5>
+            <p>GPS Coordinate — N/S</p>
+          </div>
         </div>
-    `);
-    
-    $('body').append(toast);
-    const bsToast = new bootstrap.Toast(toast[0]);
-    bsToast.show();
-    
-    setTimeout(() => toast.remove(), 3000);
-}
+        <span class="sdc-status offline" id="latStatus">OFFLINE</span>
+      </div>
+      <div class="sdc-value offline" id="sdcLat">--<span class="sdc-unit">°</span></div>
+      <div class="sdc-last" id="latLast">Awaiting connection…</div>
+      <div class="sdc-bar-wrap">
+        <div class="sdc-bar-label"><span>Coverage</span><span id="latPct">0%</span></div>
+        <div class="sdc-bar-track"><div class="sdc-bar-fill" id="latBar"></div></div>
+      </div>
+    </div>
+
+    <div class="sdc sdc-gps-lon">
+      <div class="sdc-header">
+        <div class="sdc-info">
+          <div class="sdc-icon">📍</div>
+          <div>
+            <h5>Longitude</h5>
+            <p>GPS Coordinate — E/W</p>
+          </div>
+        </div>
+        <span class="sdc-status offline" id="lonStatus">OFFLINE</span>
+      </div>
+      <div class="sdc-value offline" id="sdcLon">--<span class="sdc-unit">°</span></div>
+      <div class="sdc-last" id="lonLast">Awaiting connection…</div>
+      <div class="sdc-bar-wrap">
+        <div class="sdc-bar-label"><span>Coverage</span><span id="lonPct">0%</span></div>
+        <div class="sdc-bar-track"><div class="sdc-bar-fill" id="lonBar"></div></div>
+      </div>
+    </div>
+
+    <div class="sdc sdc-temp">
+      <div class="sdc-header">
+        <div class="sdc-info">
+          <div class="sdc-icon">🌡️</div>
+          <div>
+            <h5>Air Temperature</h5>
+            <p>DHT11 / DHT22 sensor reading</p>
+          </div>
+        </div>
+        <span class="sdc-status offline" id="tempStatus">OFFLINE</span>
+      </div>
+      <div class="sdc-value offline" id="sdcTemp">--<span class="sdc-unit">°C</span></div>
+      <div class="sdc-last" id="tempLast">Awaiting connection…</div>
+      <div class="sdc-bar-wrap">
+        <div class="sdc-bar-label"><span>0°C</span><span id="tempPct">--</span><span>50°C</span></div>
+        <div class="sdc-bar-track"><div class="sdc-bar-fill" id="tempBar"></div></div>
+      </div>
+    </div>
+
+    <div class="sdc sdc-humid">
+      <div class="sdc-header">
+        <div class="sdc-info">
+          <div class="sdc-icon">💧</div>
+          <div>
+            <h5>Air Humidity</h5>
+            <p>Relative humidity (%RH)</p>
+          </div>
+        </div>
+        <span class="sdc-status offline" id="humidStatus">OFFLINE</span>
+      </div>
+      <div class="sdc-value offline" id="sdcHumid">--<span class="sdc-unit">%</span></div>
+      <div class="sdc-last" id="humidLast">Awaiting connection…</div>
+      <div class="sdc-bar-wrap">
+        <div class="sdc-bar-label"><span>0%</span><span id="humidPct">--</span><span>100%</span></div>
+        <div class="sdc-bar-track"><div class="sdc-bar-fill" id="humidBar"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Input Form -->
+  <form method="POST" action="{{ url_for('cost_sensor_predict') }}" id="sensorForm">
+
+    <!-- Sensor-filled fields -->
+    <div class="form-section au anim-d3">
+      <div class="fs-header">
+        <div class="fs-icon gps"><i class="fas fa-broadcast-tower"></i></div>
+        <h3 class="fs-title">Live Telemetry Inputs <small style="font-size:.8rem;font-weight:600;color:#94a3b8;margin-left:8px;">(auto-filled from sensor)</small></h3>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-thermometer-half text-danger"></i> Air Temp (°C)</label>
+          <input type="number" name="temperature" id="inpTemp" class="input-modern" step="0.1" readonly required placeholder="Waiting…">
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-tint text-info"></i> Humidity (%)</label>
+          <input type="number" name="humidity" id="inpHumid" class="input-modern" step="0.1" readonly required placeholder="Waiting…">
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-map-marker-alt text-primary"></i> Latitude</label>
+          <input type="number" name="latitude" id="inpLat" class="input-modern" step="0.0001" readonly required placeholder="Waiting…">
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-map-marker-alt text-primary"></i> Longitude</label>
+          <input type="number" name="longitude" id="inpLon" class="input-modern" step="0.0001" readonly required placeholder="Waiting…">
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- Farm details -->
+    <div class="form-section au anim-d4">
+      <div class="fs-header">
+        <div class="fs-icon farm"><i class="fas fa-tractor"></i></div>
+        <h3 class="fs-title">Cultivation Topology</h3>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-calendar-alt"></i> Target Year</label>
+          <input type="number" name="year" class="input-modern" value="{{ current_year }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-sun text-warning"></i> Season</label>
+          <select name="season" class="select-modern" required>
+            {% for season in seasons %}
+            <option value="{{ season }}" {% if season=='Maha' %}selected{% endif %}>{{ season }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-layer-group"></i> Soil Type</label>
+          <select name="soil_type" class="select-modern" required>
+            {% for soil in soil_types %}
+            <option value="{{ soil }}" {% if soil=='Clay' %}selected{% endif %}>{{ soil }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="label-modern"><i class="fas fa-cloud-rain text-primary"></i> Rainfall (mm)</label>
+          <input type="number" name="rainfall" class="input-modern" step="0.1" value="30" required>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-seedling text-success"></i> Seed Type</label>
+          <select name="seed_type" class="select-modern" required>
+            {% for seed in seed_types %}
+            <option value="{{ seed }}" {% if seed=='BG352' %}selected{% endif %}>{{ seed }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-vector-square text-primary"></i> Area (Acres)</label>
+          <input type="number" name="area" class="input-modern" step="0.1" value="2.5" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Capital inputs -->
+    <div class="form-section au anim-d4">
+      <div class="fs-header">
+        <div class="fs-icon finance"><i class="fas fa-wallet"></i></div>
+        <h3 class="fs-title">Capital Constraints (LKR)</h3>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="label-modern"><i class="fas fa-leaf text-success"></i> Seed Cost</label>
+          <input type="number" name="seed_cost" class="input-modern" step="100" value="8000" required>
+        </div>
+        <div class="col-md-4">
+          <label class="label-modern"><i class="fas fa-flask text-info"></i> Fertilizer Cost</label>
+          <input type="number" name="fertilizer_cost" class="input-modern" step="100" value="15000" required>
+        </div>
+        <div class="col-md-4">
+          <label class="label-modern"><i class="fas fa-bug text-danger"></i> Pesticide Cost</label>
+          <input type="number" name="pesticide_cost" class="input-modern" step="100" value="4000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-users text-primary"></i> Labor Cost</label>
+          <input type="number" name="labor_cost" class="input-modern" step="100" value="25000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-water text-info"></i> Water Cost</label>
+          <input type="number" name="water_cost" class="input-modern" step="100" value="5000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-cogs"></i> Machinery Cost</label>
+          <input type="number" name="machinery_cost" class="input-modern" step="100" value="10000" required>
+        </div>
+        <div class="col-md-3">
+          <label class="label-modern"><i class="fas fa-ellipsis-h text-warning"></i> Other Costs</label>
+          <input type="number" name="other_costs" class="input-modern" step="100" value="2000" required>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="submit-btn-green" id="submitBtn" disabled>
+      <i class="fas fa-bolt"></i> Run AI Cost Prediction
+    </button>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  let gpsFired = false;
+  let pollerId = null;
+
+  const els = {
+    dot:      document.getElementById('scbDot'),
+    title:    document.getElementById('scbTitle'),
+    sub:      document.getElementById('scbSub'),
+    badge:    document.getElementById('scbBadge'),
+    toast:    document.getElementById('gpsToast'),
+    submit:   document.getElementById('submitBtn'),
+    inpLat:   document.getElementById('inpLat'),
+    inpLon:   document.getElementById('inpLon'),
+    inpTemp:  document.getElementById('inpTemp'),
+    inpHumid: document.getElementById('inpHumid'),
+  };
+
+  // Helper: sensor card update
+  function updateCard(id, val, unit, min, max, warningThresh, criticalThresh) {
+    const valEl    = document.getElementById('sdc'+ id);
+    const statEl   = document.getElementById(id.toLowerCase() + 'Status');
+    const barEl    = document.getElementById(id.toLowerCase() + 'Bar');
+    const pctEl    = document.getElementById(id.toLowerCase() + 'Pct');
+    const lastEl   = document.getElementById(id.toLowerCase() + 'Last');
+    if (!valEl) return;
+
+    if (val === null || val === undefined) {
+      valEl.className = 'sdc-value offline';
+      valEl.innerHTML = `--<span class="sdc-unit">${unit}</span>`;
+      if (statEl) { statEl.className='sdc-status offline'; statEl.textContent='OFFLINE';}
+      if (barEl)  barEl.style.width='0%';
+      return;
+    }
+
+    const pct = Math.max(0, Math.min(100, ((val - min)/(max - min))*100));
+    if (barEl)  { barEl.style.width = pct+'%'; }
+    if (pctEl)  pctEl.textContent = parseFloat(val).toFixed(2) + unit;
+    if (lastEl) lastEl.textContent = 'Updated: '+new Date().toLocaleTimeString();
+
+    let stCls = 'normal', stTxt = 'NORMAL';
+    if (criticalThresh && val >= criticalThresh) { stCls='critical'; stTxt='CRITICAL'; }
+    else if (warningThresh && val >= warningThresh) { stCls='warning';  stTxt='WARNING'; }
+
+    valEl.className = 'sdc-value '+ stCls;
+    valEl.innerHTML = `${parseFloat(val).toFixed(2)}<span class="sdc-unit">${unit}</span>`;
+    if (statEl) { statEl.className='sdc-status '+stCls; statEl.textContent=stTxt; }
+  }
+
+  // GPS lat/lon bar % mapped to realistic SL range
+  function updateGpsCard(idPrefix, val, unit) {
+    const valEl  = document.getElementById('sdc'+ idPrefix);
+    const statEl = document.getElementById(idPrefix.toLowerCase()+'Status');
+    const barEl  = document.getElementById(idPrefix.toLowerCase()+'Bar');
+    const pctEl  = document.getElementById(idPrefix.toLowerCase()+'Pct');
+    const lastEl = document.getElementById(idPrefix.toLowerCase()+'Last');
+    if (!valEl) return;
+    if (val === null || val === undefined) {
+      valEl.className='sdc-value offline';
+      valEl.innerHTML=`--<span class="sdc-unit">${unit}</span>`;
+      if(statEl){statEl.className='sdc-status offline';statEl.textContent='OFFLINE';}
+      if(barEl) barEl.style.width='0%';
+      return;
+    }
+    valEl.className='sdc-value normal';
+    valEl.innerHTML=`${parseFloat(val).toFixed(4)}<span class="sdc-unit">${unit}</span>`;
+    if(statEl){statEl.className='sdc-status normal';statEl.textContent='LOCK';}
+    if(barEl) barEl.style.width='80%';
+    if(pctEl) pctEl.textContent=parseFloat(val).toFixed(4)+unit;
+    if(lastEl)lastEl.textContent='GPS Lock · '+new Date().toLocaleTimeString();
+  }
+
+  function setConnStatus(connected) {
+    if (connected) {
+      els.dot.classList.add('live');
+      els.title.textContent = 'Sensor Connected — Live Data Streaming';
+      els.sub.textContent   = 'Polling every 2 seconds. Sensor values are being written into the form.';
+      els.badge.style.background='#f0fdf4'; els.badge.style.color='#15803d';
+      els.badge.textContent='LIVE';
+      els.submit.disabled = false;
+    } else {
+      els.dot.classList.remove('live');
+      els.title.textContent = 'Sensor Offline';
+      els.sub.textContent   = 'Connect your farming sensor to begin receiving live data.';
+      els.badge.style.background='#fef2f2'; els.badge.style.color='#dc2626';
+      els.badge.textContent='OFFLINE';
+      els.submit.disabled = true;
+    }
+  }
+
+  function clearLiveSensorState() {
+    els.inpTemp.value = '';
+    els.inpHumid.value = '';
+    els.inpLat.value = '';
+    els.inpLon.value = '';
+    updateCard('Temp', null, '°C', 0, 50, 38, 45);
+    updateCard('Humid', null, '%', 0, 100, 75, 90);
+    updateGpsCard('Lat', null, '°');
+    updateGpsCard('Lon', null, '°');
+    gpsFired = false;
+  }
+
+  function triggerGPSFallback() {
+    if (gpsFired) return;
+    gpsFired = true;
+    // No toast — silently fetch browser GPS and populate the cards
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude, lon = pos.coords.longitude;
+          els.inpLat.value = lat.toFixed(4);
+          els.inpLon.value = lon.toFixed(4);
+          updateGpsCard('Lat', lat,'°');
+          updateGpsCard('Lon', lon,'°');
+          checkSubmitReady();
+        },
+        () => {
+          // Hard default for Sri Lanka
+          els.inpLat.value = 7.8731; els.inpLon.value = 80.7718;
+          updateGpsCard('Lat',7.8731,'°');
+          updateGpsCard('Lon',80.7718,'°');
+          checkSubmitReady();
+        }
+      );
+    }
+  }
+
+  function checkSubmitReady() {
+    const ok = els.inpLat.value && els.inpLon.value && els.inpTemp.value && els.inpHumid.value;
+    els.submit.disabled = !ok;
+  }
+
+  function poll() {
+    fetch('/api/cost-sensor-data')
+      .then(r => r.json())
+      .then(data => {
+        const s = data.sensor;
+        if (data.success && s && s.connected) {
+          setConnStatus(true);
+          // Temperature
+          if (s.temperature !== null) {
+            els.inpTemp.value = parseFloat(s.temperature).toFixed(1);
+            updateCard('Temp', s.temperature, '°C', 0, 50, 38, 45);
+          }
+          // Humidity
+          if (s.humidity !== null) {
+            els.inpHumid.value = parseFloat(s.humidity).toFixed(1);
+            updateCard('Humid', s.humidity, '%', 0, 100, 75, 90);
+          }
+          // GPS
+          if (s.latitude !== null)  { els.inpLat.value = parseFloat(s.latitude).toFixed(4);  updateGpsCard('Lat', s.latitude,'°'); }
+          if (s.longitude !== null) { els.inpLon.value = parseFloat(s.longitude).toFixed(4); updateGpsCard('Lon', s.longitude,'°'); }
+
+          // If GPS missing → trigger HTML5 fallback immediately
+          if (s.latitude === null || s.longitude === null) {
+            triggerGPSFallback();
+          }
+          checkSubmitReady();
+        } else {
+          setConnStatus(false);
+          clearLiveSensorState();
+        }
+      })
+      .catch(() => {
+        setConnStatus(false);
+        clearLiveSensorState();
+      });
+  }
+
+  // Start polling immediately
+  poll();
+  pollerId = setInterval(poll, 2000);
+});
 </script>
 {% endblock %}

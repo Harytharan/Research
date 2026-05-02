@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Settings & Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Modern Animated Glowing Background */
+.modern-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background-color: #f8fafc; /* light theme fallback */
+}
+.modern-bg::before,
+.modern-bg::after {
+    content: '';
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: drift 15s infinite alternate ease-in-out;
+}
+.modern-bg::before {
+    background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0) 70%);
+    top: -200px;
+    left: -200px;
+}
+.modern-bg::after {
+    background: radial-gradient(circle, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0) 70%);
+    bottom: -200px;
+    right: -200px;
+    animation-delay: -5s;
+}
+
+@keyframes drift {
+    0% { transform: translateY(0) translateX(0) scale(1); }
+    100% { transform: translateY(50px) translateX(50px) scale(1.1); }
+}
+
+/* Glassmorphism Container */
+.glass-container {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+    padding: 3rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.glass-container:hover {
+    transform: translateY(-5px);
+}
+
+/* Section Header Style */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid rgba(16, 185, 129, 0.1);
+}
+
+.icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+    color: #059669;
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.1);
+}
+
+.section-header h2 {
+    font-weight: 700;
+    font-family: 'Outfit', 'Inter', sans-serif;
+    color: #1e293b;
+    margin: 0;
+    font-size: 1.75rem;
+    letter-spacing: -0.5px;
+}
+
+.section-header p {
+    color: #64748b;
+    margin: 0;
+    margin-top: 0.25rem;
+}
+
+/* Form Styles */
+.custom-form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.custom-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.95rem;
+    transition: color 0.3s;
+}
+
+.custom-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: 2px solid rgba(203, 213, 225, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    color: #1e293b;
+    transition: all 0.3s ease;
+}
+
+.custom-input:focus {
+    outline: none;
+    border-color: #10b981;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.custom-input:focus ~ label {
+    color: #10b981;
+}
+
+/* Custom Toggle Switch for Preferences */
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(241, 245, 249, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    margin-bottom: 1rem;
+    transition: background 0.3s;
+}
+
+.toggle-wrapper:hover {
+    background: rgba(241, 245, 249, 0.8);
+}
+
+.toggle-info strong {
+    display: block;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.toggle-info span {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+/* Modern Save Button */
+.btn-modern {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    color: white;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.2);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-modern::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    transition: transform 0.5s, opacity 0.5s;
+}
+
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4), 0 4px 6px -2px rgba(16, 185, 129, 0.2);
+}
+
+.btn-modern:active::after {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    transition: 0s;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="modern-bg"></div>
+
+<div class="container py-5" style="max-width: 600px;">
+    <div class="row g-5">
+        
+        <!-- Profile Section -->
+        <div class="col-lg-12">
+            <div class="glass-container h-100">
+                <div class="section-header">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                    <div>
+                        <h2>Profile Info</h2>
+                        <p>Manage your personal details</p>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('profile') }}" method="POST">
+                    <div class="custom-form-group">
+                        <label for="username">Username</label>
+                        <input type="text" class="custom-input" id="username" value="{% if current_user.is_authenticated %}{{ current_user.username }}{% endif %}">
+                    </div>
+
+                    <div class="custom-form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" class="custom-input" id="email" value="{% if current_user.is_authenticated %}{{ current_user.email }}{% endif %}">
+                    </div>
+
+                    <div class="custom-form-group">
+                        <label for="password">New Password</label>
+                        <input type="password" class="custom-input" id="password" name="password" placeholder="Enter new password">
+                    </div>
+
+                    <div class="custom-form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" class="custom-input" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                    </div>
+                    
+                    <div class="mt-5">
+                        <button type="submit" class="btn-modern">
+                            <i class="fas fa-save"></i> Save Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+
+    </div>
+</div>
+{% endblock %}

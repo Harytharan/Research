@@ -1,1 +1,15 @@
-{"blast": 0, "blight": 1, "tungro": 2}
+{
+  "None": 0,
+  "ants": 1,
+  "bees": 2,
+  "beetle": 3,
+  "catterpillar": 4,
+  "earthworms": 5,
+  "earwig": 6,
+  "grasshopper": 7,
+  "moth": 8,
+  "slug": 9,
+  "snail": 10,
+  "wasp": 11,
+  "weevil": 12
+}

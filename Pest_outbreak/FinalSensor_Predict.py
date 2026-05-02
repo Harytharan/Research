@@ -43,7 +43,7 @@ def predict(values, model, meta):
     }
 
 #  READ
-def read_one_group(port="COM3", baudrate=115200):
+def read_one_group(port="COM7", baudrate=115200):
     ser = serial.Serial(port, baudrate, timeout=1)
     print("[INFO] Waiting for ONE complete sensor cycle...\n")
 

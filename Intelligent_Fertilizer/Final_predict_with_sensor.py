@@ -91,7 +91,7 @@ def predict_top3(sensor_data, growth_stage, purpose):
 
 class SerialMonitor:
     def __init__(self):
-        self.port = "COM3"
+        self.port = "COM7"
         self.baudrate = 115200
         self.ser = None
         self.sensor_data = {}

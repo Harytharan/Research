@@ -3,347 +3,532 @@ import joblib
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import xgboost as xgb
+import matplotlib.pyplot as plt
+
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
+from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.regularizers import l2
+
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from sklearn.preprocessing import LabelEncoder
-import xgboost as xgb
-from load import load_dataset
-from pre_process import preprocess
-from featureeng import create_lstm_sequences
 
 
-#  Enhanced LSTM
-def build_enhanced_lstm_model(input_shape):
-    model = Sequential([
-        LSTM(128, return_sequences=True, input_shape=input_shape,
-             kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
-        BatchNormalization(),
-        Dropout(0.3),
+# =========================================================
+# CONFIG
+# =========================================================
+DATA_PATH = "paddy_price_dataset_with_rice_type_stronger_timeseries.xlsx"
+MODEL_DIR = "models"
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-        LSTM(64, return_sequences=True,
-             kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
-        BatchNormalization(),
-        Dropout(0.3),
-
-        LSTM(32, return_sequences=False,
-             kernel_regularizer=l2(0.001), recurrent_regularizer=l2(0.001)),
-        BatchNormalization(),
-        Dropout(0.2),
-
-        Dense(64, activation="relu", kernel_regularizer=l2(0.001)),
-        Dropout(0.2),
-        Dense(32, activation="relu", kernel_regularizer=l2(0.001)),
-        Dropout(0.1),
-        Dense(1, activation="linear")
-    ])
-
-    optimizer = Adam(learning_rate=0.001)
-    model.compile(optimizer=optimizer, loss="mse", metrics=["mae", "mape"])
-    return model
+np.random.seed(42)
+tf.random.set_seed(42)
 
 
-# - Lag Features
-def add_lag_features(df, target_col, n_lags=14):
-    df_copy = df.copy()
-    for lag in range(1, n_lags + 1):
-        df_copy[f"{target_col}_lag{lag}"] = df_copy[target_col].shift(lag)
-    return df_copy
+# =========================================================
+# LOAD DATASET
+# =========================================================
+def load_dataset(path=DATA_PATH):
+    df = pd.read_excel(path, sheet_name=0)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df = df.sort_values(["Region", "Rice_Type", "Date"]).reset_index(drop=True)
+    return df
 
 
-# Add Rolling
-def add_rolling_and_seasonal(df):
-    df_copy = df.copy()
+# =========================================================
+# CLEAN DATASET
+# =========================================================
+def clean_dataset(df):
+    df = df.copy()
 
-    # Multiple
-    for window in [3, 7, 14, 21]:
-        df_copy[f'Demand_roll{window}'] = df_copy['Demand_Tons'].rolling(window).mean()
-        df_copy[f'Price_roll{window}'] = df_copy['Paddy_Price_LKR_per_kg'].rolling(window).mean()
-        df_copy[f'Temperature_roll{window}'] = df_copy['Temperature_C'].rolling(window).mean()
-        df_copy[f'Rainfall_roll{window}'] = df_copy['Rainfall_mm'].rolling(window).mean()
+    # safety cleaning
+    df["Rainfall_mm"] = df["Rainfall_mm"].clip(lower=0)
+    df["Phosphorus_P"] = df["Phosphorus_P"].clip(lower=0)
+    df["Nitrogen_N"] = df["Nitrogen_N"].clip(lower=0)
+    df["Potassium_K"] = df["Potassium_K"].clip(lower=0)
 
-    #  statistics
-    df_copy['Demand_roll7_std'] = df_copy['Demand_Tons'].rolling(7).std()
-    df_copy['Price_roll7_std'] = df_copy['Paddy_Price_LKR_per_kg'].rolling(7).std()
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    df[numeric_cols] = df[numeric_cols].interpolate(method="linear", limit_direction="both")
+    df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
 
-    # Month encoding
-    df_copy['Month'] = pd.to_datetime(df_copy['Date']).dt.month
-    df_copy['month_sin'] = np.sin(2 * np.pi * df_copy['Month'] / 12)
-    df_copy['month_cos'] = np.cos(2 * np.pi * df_copy['Month'] / 12)
-
-    # Quarter encoding
-    df_copy['Quarter'] = pd.to_datetime(df_copy['Date']).dt.quarter
-    df_copy['quarter_sin'] = np.sin(2 * np.pi * df_copy['Quarter'] / 4)
-    df_copy['quarter_cos'] = np.cos(2 * np.pi * df_copy['Quarter'] / 4)
-
-    # Day-of-week encoding
-    df_copy['day_of_week'] = pd.to_datetime(df_copy['Date']).dt.dayofweek
-    df_copy['dow_sin'] = np.sin(2 * np.pi * df_copy['day_of_week'] / 7)
-    df_copy['dow_cos'] = np.cos(2 * np.pi * df_copy['day_of_week'] / 7)
-
-    # Day of year encoding for seasonal patterns
-    df_copy['day_of_year'] = pd.to_datetime(df_copy['Date']).dt.dayofyear
-    df_copy['doy_sin'] = np.sin(2 * np.pi * df_copy['day_of_year'] / 365)
-    df_copy['doy_cos'] = np.cos(2 * np.pi * df_copy['day_of_year'] / 365)
-
-    # Year progression
-    df_copy['year_progress'] = df_copy['day_of_year'] / 365.0
-
-    # Weekend flag
-    df_copy['is_weekend'] = (df_copy['day_of_week'] >= 5).astype(int)
-
-    return df_copy
+    df = df.dropna(subset=["Date", "Region", "Rice_Type"]).reset_index(drop=True)
+    return df
 
 
-#  Price Difference Features
-def add_price_momentum(df):
-    df_copy = df.copy()
+# =========================================================
+# FEATURE ENGINEERING
+# =========================================================
+def add_time_features(df):
+    df = df.copy()
 
-    # Price differences
-    df_copy['price_diff_1'] = df_copy['Paddy_Price_LKR_per_kg'].diff()
-    df_copy['price_diff_3'] = df_copy['Paddy_Price_LKR_per_kg'].diff(3)
-    df_copy['price_diff_7'] = df_copy['Paddy_Price_LKR_per_kg'].diff(7)
+    df["Year"] = df["Date"].dt.year
+    df["Month"] = df["Date"].dt.month
+    df["Day"] = df["Date"].dt.day
+    df["Quarter"] = df["Date"].dt.quarter
+    df["DayOfWeek"] = df["Date"].dt.dayofweek
+    df["DayOfYear"] = df["Date"].dt.dayofyear
+    df["WeekOfYear"] = df["Date"].dt.isocalendar().week.astype(int)
+    df["IsWeekend"] = (df["DayOfWeek"] >= 5).astype(int)
 
-    # Price momentum (rate of change)
-    df_copy['price_momentum_3'] = df_copy['Paddy_Price_LKR_per_kg'].pct_change(3)
-    df_copy['price_momentum_7'] = df_copy['Paddy_Price_LKR_per_kg'].pct_change(7)
+    df["month_sin"] = np.sin(2 * np.pi * df["Month"] / 12.0)
+    df["month_cos"] = np.cos(2 * np.pi * df["Month"] / 12.0)
+    df["doy_sin"] = np.sin(2 * np.pi * df["DayOfYear"] / 365.0)
+    df["doy_cos"] = np.cos(2 * np.pi * df["DayOfYear"] / 365.0)
 
-    # Price volatility
-    df_copy['price_volatility_7'] = df_copy['Paddy_Price_LKR_per_kg'].rolling(7).std()
+    def season_map(month):
+        if month in [10, 11, 12, 1, 2, 3]:
+            return "Maha"
+        return "Yala"
 
-    return df_copy
+    df["Season"] = df["Month"].apply(season_map)
+    return df
 
 
-# Data Validation
-def validate_data(df, target_col):
-    print("\nData Validation:")
-    print(f"Dataset shape: {df.shape}")
-    print(f"Missing values in target: {df[target_col].isnull().sum()}")
-    print(f"Target statistics:")
-    print(f"  Mean: {df[target_col].mean():.2f}")
-    print(f"  Std: {df[target_col].std():.2f}")
-    print(f"  Min: {df[target_col].min():.2f}")
-    print(f"  Max: {df[target_col].max():.2f}")
+def add_group_features(df):
+    df = df.copy()
+    group_cols = ["Region", "Rice_Type"]
 
-    # Check for constant values
-    if df[target_col].std() < 0.01:
-        print("Target variable has very low variance!")
+    lag_base_cols = [
+        "Paddy_Price_LKR_per_kg",
+        "Demand_Tons",
+        "Rainfall_mm",
+        "Temperature_C",
+        "Sentiment_Score",
+        "News_Sentiment"
+    ]
+
+    # lags
+    for col in lag_base_cols:
+        for lag in [1, 2, 3, 7, 14, 21, 30]:
+            df[f"{col}_lag{lag}"] = df.groupby(group_cols)[col].shift(lag)
+
+    # rolling means
+    for col in ["Paddy_Price_LKR_per_kg", "Demand_Tons", "Rainfall_mm", "Temperature_C"]:
+        for win in [3, 7, 14, 21, 30]:
+            df[f"{col}_roll{win}"] = (
+                df.groupby(group_cols)[col]
+                .rolling(win)
+                .mean()
+                .reset_index(level=[0, 1], drop=True)
+            )
+
+    # price trend features
+    df["Price_diff_1"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].diff(1)
+    df["Price_diff_3"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].diff(3)
+    df["Price_diff_7"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].diff(7)
+
+    df["Price_momentum_7"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].pct_change(7)
+    df["Price_momentum_14"] = df.groupby(group_cols)["Paddy_Price_LKR_per_kg"].pct_change(14)
+
+    # demand trend features
+    df["Demand_diff_1"] = df.groupby(group_cols)["Demand_Tons"].diff(1)
+    df["Demand_momentum_7"] = df.groupby(group_cols)["Demand_Tons"].pct_change(7)
 
     return df
 
 
-#  Enhanced LSTM Sequence Creation
-def create_enhanced_lstm_sequences(df, feature_cols, target_col, window_size=14):
-    X, y = create_lstm_sequences(df, feature_cols, target_col, window_size)
+# =========================================================
+# ENCODING
+# =========================================================
+def encode_categories(df):
+    df = df.copy()
 
-    print(f"LSTM Sequences created:")
-    print(f"  X shape: {X.shape}")
-    print(f"  y shape: {y.shape}")
-    print(f"  Target range: {y.min():.2f} to {y.max():.2f}")
-    print(f"  Target std: {y.std():.2f}")
+    le_region = LabelEncoder()
+    le_rice = LabelEncoder()
+    le_season = LabelEncoder()
 
-    # Check NaN values
-    if np.isnan(X).any() or np.isnan(y).any():
-        print("NaN values detected in sequences!")
+    df["Region_encoded"] = le_region.fit_transform(df["Region"])
+    df["Rice_Type_encoded"] = le_rice.fit_transform(df["Rice_Type"])
+    df["Season_encoded"] = le_season.fit_transform(df["Season"])
 
-        X = np.nan_to_num(X)
-        y = np.nan_to_num(y)
+    joblib.dump(le_region, os.path.join(MODEL_DIR, "region_encoder.joblib"))
+    joblib.dump(le_rice, os.path.join(MODEL_DIR, "rice_type_encoder.joblib"))
+    joblib.dump(le_season, os.path.join(MODEL_DIR, "season_encoder.joblib"))
 
-    return X, y
+    return df
 
 
-# Main Training Pipeline
-def main():
-    os.makedirs("models", exist_ok=True)
+# =========================================================
+# SEQUENCE CREATION
+# =========================================================
+def create_sequences(df, feature_cols, target_col, group_cols, window_size=30):
+    X_all, y_all = [], []
 
-    # Load & preprocess dataset
-    print("Loading dataset...")
-    df = load_dataset()
+    grouped = df.groupby(group_cols, sort=False)
 
-    # Validate original data
-    df = validate_data(df, "Paddy_Price_LKR_per_kg")
+    for _, g in grouped:
+        g = g.sort_values("Date").reset_index(drop=True)
 
-    df_raw, df_mm, df_std, artifacts = preprocess(df, save_artifacts=True, artifact_dir="models")
+        if len(g) <= window_size:
+            continue
 
-    # Enhanced feature engineering for LSTM
-    print("\nApplying enhanced feature engineering...")
-    df_mm = add_rolling_and_seasonal(df_mm)
-    df_mm = add_price_momentum(df_mm)
-    df_mm = df_mm.dropna().reset_index(drop=True)
+        X_group = g[feature_cols].values
+        y_group = g[target_col].values
 
-    # LSTM features for price prediction
-    exclude = {"Date", "Paddy_Price_LKR_per_kg", "Demand_Tons"}
-    feature_cols = [c for c in df_mm.columns if c not in exclude]
+        for i in range(window_size, len(g)):
+            X_all.append(X_group[i - window_size:i])
+            y_all.append(y_group[i])
 
-    print(f"LSTM Feature columns ({len(feature_cols)}): {feature_cols}")
+    X_all = np.array(X_all, dtype=np.float32)
+    y_all = np.array(y_all, dtype=np.float32)
+    return X_all, y_all
 
-    # Train Enhanced LSTM Price Model
-    print("\nCreating enhanced LSTM sequences for price prediction...")
-    window_size = 21  # Increased window size for better context
-    X_seq, y_seq = create_enhanced_lstm_sequences(
-        df_mm, feature_cols, target_col="Paddy_Price_LKR_per_kg", window_size=window_size
+
+# =========================================================
+# MODEL
+# =========================================================
+def build_lstm_model(input_shape):
+    model = Sequential([
+        LSTM(96, return_sequences=True, input_shape=input_shape),
+        Dropout(0.15),
+
+        LSTM(48, return_sequences=False),
+        Dropout(0.10),
+
+        Dense(32, activation="relu"),
+        Dense(16, activation="relu"),
+        Dense(1)
+    ])
+
+    model.compile(
+        optimizer=Adam(learning_rate=0.001),
+        loss="mse",
+        metrics=["mae"]
     )
+    return model
 
-    train_size = int(0.8 * len(X_seq))
-    X_train_seq, X_val_seq = X_seq[:train_size], X_seq[train_size:]
-    y_train_seq, y_val_seq = y_seq[:train_size], y_seq[train_size:]
 
-    print(f"Training sequences: {X_train_seq.shape}")
-    print(f"Validation sequences: {X_val_seq.shape}")
+# =========================================================
+# PLOTTING
+# =========================================================
+def plot_predictions(y_true, y_pred, title, save_path, ylabel):
+    plt.figure(figsize=(14, 6))
+    plt.plot(y_true[:250], label="Actual")
+    plt.plot(y_pred[:250], label="Predicted")
+    plt.title(title)
+    plt.xlabel("Time Step")
+    plt.ylabel(ylabel)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
 
-    # Clear session and build enhanced model
-    tf.keras.backend.clear_session()
-    lstm = build_enhanced_lstm_model((X_train_seq.shape[1], X_train_seq.shape[2]))
 
-    print("\nEnhanced LSTM Model Architecture:")
-    lstm.summary()
+# =========================================================
+# MAIN
+# =========================================================
+def main():
+    print("Loading dataset...")
+    df = load_dataset(DATA_PATH)
 
-    # Enhanced callbacks
-    checkpoint_path = os.path.join("models", "best_lstm_price_model.keras")
-    callbacks = [
-        EarlyStopping(monitor="val_loss", patience=25, restore_best_weights=True, verbose=1),
-        ModelCheckpoint(checkpoint_path, save_best_only=True, monitor="val_loss", verbose=1),
-        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=1, min_lr=1e-7)
+    print("Cleaning dataset...")
+    df = clean_dataset(df)
+
+    print("Creating features...")
+    df = add_time_features(df)
+    df = add_group_features(df)
+    df = encode_categories(df)
+
+    # remove NaNs from lag/rolling features
+    df = df.dropna().reset_index(drop=True)
+
+    # =====================================================
+    # PRICE MODEL (LSTM)
+    # =====================================================
+    price_feature_cols = [
+        "Region_encoded",
+        "Rice_Type_encoded",
+        "Season_encoded",
+        "Month",
+        "DayOfYear",
+        "month_sin",
+        "month_cos",
+        "doy_sin",
+        "doy_cos",
+        "Rainfall_mm",
+        "Temperature_C",
+        "Sentiment_Score",
+        "News_Sentiment",
+        "Paddy_Price_LKR_per_kg_lag1",
+        "Paddy_Price_LKR_per_kg_lag2",
+        "Paddy_Price_LKR_per_kg_lag3",
+        "Paddy_Price_LKR_per_kg_lag7",
+        "Paddy_Price_LKR_per_kg_lag14",
+        "Paddy_Price_LKR_per_kg_lag21",
+        "Paddy_Price_LKR_per_kg_lag30",
+        "Paddy_Price_LKR_per_kg_roll3",
+        "Paddy_Price_LKR_per_kg_roll7",
+        "Paddy_Price_LKR_per_kg_roll14",
+        "Paddy_Price_LKR_per_kg_roll21",
+        "Paddy_Price_LKR_per_kg_roll30",
+        "Price_diff_1",
+        "Price_diff_3",
+        "Price_diff_7",
+        "Price_momentum_7",
+        "Price_momentum_14"
     ]
 
-    print("\nTraining Enhanced LSTM model...")
-    history = lstm.fit(
-        X_train_seq, y_train_seq,
-        validation_data=(X_val_seq, y_val_seq),
-        epochs=70,  # Increased epochs
+    target_price = "Paddy_Price_LKR_per_kg"
+    window_size = 30
+
+    # chronological split
+    split_date = df["Date"].quantile(0.80)
+    df_train = df[df["Date"] <= split_date].copy()
+    df_val = df[df["Date"] > split_date].copy()
+
+    print(f"Train rows: {len(df_train)}")
+    print(f"Val rows: {len(df_val)}")
+    print(f"Split date: {split_date}")
+
+    feature_scaler = MinMaxScaler()
+    target_scaler = MinMaxScaler()
+
+    df_train_scaled = df_train.copy()
+    df_val_scaled = df_val.copy()
+
+    df_train_scaled[price_feature_cols] = feature_scaler.fit_transform(df_train_scaled[price_feature_cols])
+    df_val_scaled[price_feature_cols] = feature_scaler.transform(df_val_scaled[price_feature_cols])
+
+    df_train_scaled[[target_price]] = target_scaler.fit_transform(df_train_scaled[[target_price]])
+    df_val_scaled[[target_price]] = target_scaler.transform(df_val_scaled[[target_price]])
+
+    joblib.dump(feature_scaler, os.path.join(MODEL_DIR, "lstm_feature_scaler.joblib"))
+    joblib.dump(target_scaler, os.path.join(MODEL_DIR, "lstm_target_scaler.joblib"))
+    joblib.dump(price_feature_cols, os.path.join(MODEL_DIR, "lstm_feature_columns.joblib"))
+
+    X_train, y_train = create_sequences(
+        df_train_scaled,
+        feature_cols=price_feature_cols,
+        target_col=target_price,
+        group_cols=["Region", "Rice_Type"],
+        window_size=window_size
+    )
+
+    X_val, y_val = create_sequences(
+        df_val_scaled,
+        feature_cols=price_feature_cols,
+        target_col=target_price,
+        group_cols=["Region", "Rice_Type"],
+        window_size=window_size
+    )
+
+    print("LSTM train shape:", X_train.shape)
+    print("LSTM val shape:", X_val.shape)
+
+    tf.keras.backend.clear_session()
+    lstm = build_lstm_model((X_train.shape[1], X_train.shape[2]))
+
+    callbacks = [
+        EarlyStopping(
+            monitor="val_loss",
+            patience=12,
+            restore_best_weights=True,
+            verbose=1
+        ),
+        ModelCheckpoint(
+            os.path.join(MODEL_DIR, "best_lstm_price_model.keras"),
+            save_best_only=True,
+            monitor="val_loss",
+            verbose=1
+        ),
+        ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
+            verbose=1
+        )
+    ]
+
+    print("\nTraining LSTM price model...")
+    lstm.fit(
+        X_train,
+        y_train,
+        validation_data=(X_val, y_val),
+        epochs=80,
         batch_size=32,
+        shuffle=False,
         callbacks=callbacks,
-        verbose=1,
-        shuffle=False  # Important for time series
+        verbose=1
     )
 
-    # Evaluate LSTM model
-    train_pred = lstm.predict(X_train_seq, verbose=0)
-    val_pred = lstm.predict(X_val_seq, verbose=0)
+    y_train_pred_scaled = lstm.predict(X_train, verbose=0)
+    y_val_pred_scaled = lstm.predict(X_val, verbose=0)
 
-    train_rmse = np.sqrt(mean_squared_error(y_train_seq, train_pred))
-    val_rmse = np.sqrt(mean_squared_error(y_val_seq, val_pred))
-    train_r2 = r2_score(y_train_seq, train_pred)
-    val_r2 = r2_score(y_val_seq, val_pred)
+    y_train_true = target_scaler.inverse_transform(y_train.reshape(-1, 1)).flatten()
+    y_val_true = target_scaler.inverse_transform(y_val.reshape(-1, 1)).flatten()
+    y_train_pred = target_scaler.inverse_transform(y_train_pred_scaled).flatten()
+    y_val_pred = target_scaler.inverse_transform(y_val_pred_scaled).flatten()
 
-    print(f"\nLSTM Model Evaluation:")
-    print(f"Train RMSE: {train_rmse:.4f}")
-    print(f"Val RMSE: {val_rmse:.4f}")
-    print(f"Train R²: {train_r2:.4f}")
-    print(f"Val R²: {val_r2:.4f}")
+    print("\n===== LSTM PRICE MODEL =====")
+    print("Train RMSE:", np.sqrt(mean_squared_error(y_train_true, y_train_pred)))
+    print("Val RMSE:", np.sqrt(mean_squared_error(y_val_true, y_val_pred)))
+    print("Train MAE :", mean_absolute_error(y_train_true, y_train_pred))
+    print("Val MAE   :", mean_absolute_error(y_val_true, y_val_pred))
+    print("Train R2  :", r2_score(y_train_true, y_train_pred))
+    print("Val R2    :", r2_score(y_val_true, y_val_pred))
 
-    # Save the final model
-    lstm.save(os.path.join("models", "lstm_price_model_final.h5"))
-    print("Enhanced LSTM model saved")
+    lstm.save(os.path.join(MODEL_DIR, "lstm_price_model_final.h5"))
 
-    #  Feature Engineering for Demand
-    print("\nPreparing features for demand prediction...")
-
-    # Predict
-    X_full_seq, _ = create_enhanced_lstm_sequences(
-        df_mm, feature_cols, target_col="Paddy_Price_LKR_per_kg", window_size=window_size
+    plot_predictions(
+        y_val_true,
+        y_val_pred,
+        "LSTM Price Prediction - Actual vs Predicted",
+        os.path.join(MODEL_DIR, "lstm_price_prediction_curve.png"),
+        ylabel="Price"
     )
-    pred_prices = lstm.predict(X_full_seq, verbose=0)
 
-    # Create proper aligned predictions
-    pred_prices_full = np.zeros(len(df_std))
-    pred_prices_full[window_size:window_size + len(pred_prices)] = pred_prices.flatten()
-    pred_prices_full[:window_size] = pred_prices[0]  # Fill initial values
+    # =====================================================
+    # PRICE PREDICTIONS FOR DEMAND MODEL
+    # =====================================================
+    df_all_scaled = df.copy()
+    df_all_scaled[price_feature_cols] = feature_scaler.transform(df_all_scaled[price_feature_cols])
+    df_all_scaled[[target_price]] = target_scaler.transform(df_all_scaled[[target_price]])
 
-    df_std['Price_LSTM_pred'] = pred_prices_full
+    X_full, _ = create_sequences(
+        df_all_scaled,
+        feature_cols=price_feature_cols,
+        target_col=target_price,
+        group_cols=["Region", "Rice_Type"],
+        window_size=window_size
+    )
 
-    # Enhanced feature engineering for demand
-    df_std = add_lag_features(df_std, "Demand_Tons", n_lags=21)
-    df_std = add_rolling_and_seasonal(df_std)
-    df_std = add_price_momentum(df_std)
-    df_std = df_std.dropna().reset_index(drop=True)
+    full_pred_scaled = lstm.predict(X_full, verbose=0)
+    full_pred = target_scaler.inverse_transform(full_pred_scaled).flatten()
 
-    # Encode categorical columns
-    cat_cols = [c for c in df_std.columns if df_std[c].dtype == 'object' and c != 'Date']
-    for col in cat_cols:
-        le = LabelEncoder()
-        df_std[col] = le.fit_transform(df_std[col])
-        joblib.dump(le, f"models/{col}_encoder.joblib")
+    df_demand = df.copy().reset_index(drop=True)
+    df_demand["Price_LSTM_pred"] = np.nan
 
-    # Prepare features and target
-    target_col = "Demand_Tons"
-    X_tab = df_std.drop(columns=[target_col, "Date"])
-    y_tab = df_std[target_col].values
+    idx_positions = []
+    for _, g in df_demand.groupby(["Region", "Rice_Type"], sort=False):
+        g = g.sort_values("Date")
+        idxs = g.index.tolist()
+        if len(idxs) > window_size:
+            idx_positions.extend(idxs[window_size:])
 
-    print(f"Final feature matrix shape: {X_tab.shape}")
+    df_demand.loc[idx_positions, "Price_LSTM_pred"] = full_pred
 
-    # Time-based train/test split
-    split_idx = int(0.8 * len(X_tab))
-    X_train_tab, X_test_tab = X_tab.iloc[:split_idx], X_tab.iloc[split_idx:]
-    y_train_tab, y_test_tab = y_tab[:split_idx], y_tab[split_idx:]
-    print(f"Tabular data shapes -> Train: {X_train_tab.shape}, Test: {X_test_tab.shape}")
+    df_demand["Price_LSTM_pred"] = (
+        df_demand.groupby(["Region", "Rice_Type"])["Price_LSTM_pred"]
+        .transform(lambda s: s.bfill().ffill())
+    )
 
-    # Train Enhanced XGBoost
+    # =====================================================
+    # DEMAND MODEL (XGBOOST)
+    # =====================================================
+    demand_feature_cols = [
+        "Region_encoded",
+        "Rice_Type_encoded",
+        "Season_encoded",
+        "Month",
+        "DayOfYear",
+        "month_sin",
+        "month_cos",
+        "doy_sin",
+        "doy_cos",
+        "Rainfall_mm",
+        "Temperature_C",
+        "Sentiment_Score",
+        "News_Sentiment",
+        "Nitrogen_N",
+        "Phosphorus_P",
+        "Potassium_K",
+        "Price_LSTM_pred",
+        "Paddy_Price_LKR_per_kg_lag1",
+        "Paddy_Price_LKR_per_kg_lag2",
+        "Paddy_Price_LKR_per_kg_lag3",
+        "Paddy_Price_LKR_per_kg_lag7",
+        "Paddy_Price_LKR_per_kg_lag14",
+        "Paddy_Price_LKR_per_kg_roll3",
+        "Paddy_Price_LKR_per_kg_roll7",
+        "Paddy_Price_LKR_per_kg_roll14",
+        "Demand_Tons_lag1",
+        "Demand_Tons_lag2",
+        "Demand_Tons_lag3",
+        "Demand_Tons_lag7",
+        "Demand_Tons_lag14",
+        "Demand_Tons_roll3",
+        "Demand_Tons_roll7",
+        "Demand_Tons_roll14",
+        "Price_diff_1",
+        "Price_diff_3",
+        "Price_diff_7",
+        "Price_momentum_7",
+        "Demand_diff_1",
+        "Demand_momentum_7"
+    ]
+
+    target_demand = "Demand_Tons"
+
+    split_date_demand = df_demand["Date"].quantile(0.80)
+    train_mask = df_demand["Date"] <= split_date_demand
+    test_mask = df_demand["Date"] > split_date_demand
+
+    X_train_tab = df_demand.loc[train_mask, demand_feature_cols].copy()
+    y_train_tab = df_demand.loc[train_mask, target_demand].values
+
+    X_test_tab = df_demand.loc[test_mask, demand_feature_cols].copy()
+    y_test_tab = df_demand.loc[test_mask, target_demand].values
+
     model_xgb = xgb.XGBRegressor(
-        n_estimators=2000,
-        learning_rate=0.01,
-        max_depth=10,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        colsample_bylevel=0.8,
-        reg_alpha=0.1,
-        reg_lambda=0.1,
+        n_estimators=1200,
+        learning_rate=0.02,
+        max_depth=6,
+        min_child_weight=2,
+        subsample=0.90,
+        colsample_bytree=0.90,
+        reg_alpha=0.03,
+        reg_lambda=0.20,
+        objective="reg:squarederror",
         random_state=42
     )
 
-    print("\nTraining Enhanced XGBoost Demand model...")
+    print("\nTraining XGBoost demand model...")
     model_xgb.fit(
-        X_train_tab, y_train_tab,
+        X_train_tab,
+        y_train_tab,
         eval_set=[(X_test_tab, y_test_tab)],
-        early_stopping_rounds=100,
-        verbose=50
+        verbose=100
     )
 
-    # Enhanced evaluation
     y_pred = model_xgb.predict(X_test_tab)
-    r2 = r2_score(y_test_tab, y_pred)
-    mae = mean_absolute_error(y_test_tab, y_pred)
-    rmse = mean_squared_error(y_test_tab, y_pred, squared=False)
-    mape = np.mean(np.abs((y_test_tab - y_pred) / y_test_tab)) * 100
 
-    print("\nEnhanced XGBoost Demand Model Evaluation:")
-    print(f"R²: {r2:.4f}")
-    print(f"MAE: {mae:.4f}")
-    print(f"RMSE: {rmse:.4f}")
-    print(f"MAPE: {mape:.2f}%")
+    print("\n===== XGBOOST DEMAND MODEL =====")
+    print("R2   :", r2_score(y_test_tab, y_pred))
+    print("MAE  :", mean_absolute_error(y_test_tab, y_pred))
+    print("RMSE :", np.sqrt(mean_squared_error(y_test_tab, y_pred)))
 
-    # Feature importance
-    importances = model_xgb.feature_importances_
-    feat_imp = sorted(zip(X_tab.columns, importances), key=lambda x: x[1], reverse=True)
-    print("\n🔝 Top 15 Important Features for Demand:")
-    for f, imp in feat_imp[:15]:
-        print(f"  {f}: {imp:.4f}")
+    plot_predictions(
+        y_test_tab,
+        y_pred,
+        "XGBoost Demand Prediction - Actual vs Predicted",
+        os.path.join(MODEL_DIR, "xgb_demand_prediction_curve.png"),
+        ylabel="Demand"
+    )
 
-    # Save models and artifacts
-    joblib.dump(model_xgb, "models/xgb_demand_model_best_optimized.joblib")
-    joblib.dump(X_tab.columns.tolist(), "models/feature_columns_optimized.joblib")
-    joblib.dump(feature_cols, "models/lstm_feature_columns.joblib")
+    # =====================================================
+    # SAVE FILES
+    # =====================================================
+    joblib.dump(model_xgb, os.path.join(MODEL_DIR, "xgb_demand_model.joblib"))
+    joblib.dump(demand_feature_cols, os.path.join(MODEL_DIR, "xgb_feature_columns.joblib"))
 
-    # Save preprocessing info
     training_info = {
-        'window_size': window_size,
-        'lstm_features': feature_cols,
-        'xgb_features': X_tab.columns.tolist(),
-        'training_date': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'data_shape': df.shape,
-        'final_features': X_tab.shape[1]
+        "window_size": window_size,
+        "lstm_features": price_feature_cols,
+        "xgb_features": demand_feature_cols,
+        "data_shape": df.shape,
+        "training_date": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-    joblib.dump(training_info, "models/training_info.joblib")
+    joblib.dump(training_info, os.path.join(MODEL_DIR, "training_info.joblib"))
 
-    print("\nAll models and artifacts saved in 'models/' folder.")
-    print(f"Models saved:")
-    print(f"   - LSTM Price Model: lstm_price_model_final.h5")
-    print(f"   - XGBoost Demand Model: xgb_demand_model_best_optimized.joblib")
-    print(f"   - Feature columns: feature_columns_optimized.joblib")
-    print(f"   - Training info: training_info.joblib")
+    print("\nSaved files:")
+    print("- models/lstm_price_model_final.h5")
+    print("- models/best_lstm_price_model.keras")
+    print("- models/xgb_demand_model.joblib")
+    print("- models/lstm_price_prediction_curve.png")
+    print("- models/xgb_demand_prediction_curve.png")
+    print("- models/training_info.joblib")
 
 
 if __name__ == "__main__":

@@ -2,21 +2,308 @@
 
 {% block title %}Sensor-Based Prediction - Paddy Predictor{% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <div class="welcome-card mb-4">
-                <h2><i class="fas fa-microchip me-2"></i>Sensor-Based Prediction</h2>
-                <p class="mb-0">Live serial sensor integration for current NPK readings</p>
-            </div>
+{% block extra_css %}
+<style>
+    .sensor-page {
+        --sensor-ink: #173730;
+        --sensor-muted: #627a72;
+        --sensor-line: rgba(23, 55, 48, 0.10);
+    }
 
-            <div class="form-card mb-4">
-                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
-                    <h5 class="mb-2 mb-md-0">
-                        <i class="fas fa-satellite-dish text-success me-2"></i>Live Sensor Status
-                    </h5>
-                    <div class="d-flex gap-2">
+    .sensor-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        padding: 34px;
+        background:
+            radial-gradient(circle at top right, rgba(255, 213, 138, 0.30), transparent 24%),
+            radial-gradient(circle at left bottom, rgba(114, 187, 210, 0.28), transparent 26%),
+            linear-gradient(135deg, #173730 0%, #24584a 48%, #3d806c 100%);
+        box-shadow: 0 24px 56px rgba(20, 49, 43, 0.22);
+        color: #fff;
+    }
+
+    .sensor-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .sensor-hero h2 {
+        color: #fff;
+        font-size: clamp(2rem, 3vw, 3rem);
+        line-height: 1.05;
+        margin-bottom: 12px;
+    }
+
+    .sensor-hero p {
+        color: rgba(255,255,255,0.84);
+        margin-bottom: 0;
+        max-width: 700px;
+    }
+
+    .sensor-hero-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+    }
+
+    .sensor-hero-card {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.12);
+        backdrop-filter: blur(10px);
+    }
+
+    .sensor-hero-label {
+        color: rgba(255,255,255,0.70);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 6px;
+    }
+
+    .sensor-hero-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .sensor-panel,
+    .sensor-form-shell {
+        border-radius: 26px;
+        border: 1px solid var(--sensor-line);
+        background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98));
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .sensor-panel {
+        padding: 26px;
+    }
+
+    .sensor-section-title {
+        color: var(--sensor-ink);
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .sensor-section-copy {
+        color: var(--sensor-muted);
+        margin-bottom: 22px;
+    }
+
+    .sensor-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .sensor-toolbar-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sensor-toolbar-buttons .btn {
+        border-radius: 14px;
+        font-weight: 700;
+    }
+
+    .sensor-status-grid,
+    .npk-grid,
+    .sensor-form-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .sensor-status-grid {
+        grid-template-columns: 1.1fr 1.1fr 1.5fr;
+    }
+
+    .sensor-info-card,
+    .npk-card,
+    .sensor-field {
+        border-radius: 22px;
+        padding: 20px;
+        background: linear-gradient(180deg, #ffffff, #f8fbf9);
+        border: 1px solid rgba(23, 55, 48, 0.08);
+        height: 100%;
+    }
+
+    .sensor-info-label,
+    .npk-subtitle,
+    .sensor-field small {
+        color: var(--sensor-muted);
+    }
+
+    .sensor-connection-state {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--sensor-ink);
+        margin-top: 8px;
+    }
+
+    .sensor-reading-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 14px;
+    }
+
+    .reading-pill {
+        border-radius: 18px;
+        padding: 14px 10px;
+        text-align: center;
+        background: rgba(255,255,255,0.86);
+        border: 1px solid rgba(23, 55, 48, 0.08);
+    }
+
+    .reading-pill .symbol {
+        display: inline-flex;
+        width: 34px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        color: #fff;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .reading-pill.n .symbol { background: linear-gradient(135deg, #2f7d59, #67af85); }
+    .reading-pill.p .symbol { background: linear-gradient(135deg, #47849e, #77b5c8); }
+    .reading-pill.k .symbol { background: linear-gradient(135deg, #c78a2c, #dfb15a); }
+
+    .reading-pill .value {
+        color: var(--sensor-ink);
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+
+    .sensor-form-shell {
+        padding: 28px;
+    }
+
+    .sensor-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 22px;
+    }
+
+    .sensor-field label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--sensor-ink);
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .sensor-field .form-control,
+    .sensor-field .form-select,
+    .sensor-field .input-group-text {
+        min-height: 52px;
+        border-radius: 16px;
+    }
+
+    .sensor-field .form-control,
+    .sensor-field .form-select {
+        border: 1px solid rgba(23, 55, 48, 0.12);
+        box-shadow: none;
+    }
+
+    .sensor-field .form-control:focus,
+    .sensor-field .form-select:focus {
+        border-color: #4f8a67;
+        box-shadow: 0 0 0 0.2rem rgba(79, 138, 103, 0.14);
+    }
+
+    .sensor-field .input-group-text {
+        border: 1px solid rgba(23, 55, 48, 0.12);
+        background: #eef5f0;
+        color: #325e52;
+        font-weight: 700;
+    }
+
+    .sensor-submit {
+        border-radius: 18px;
+        min-height: 58px;
+        font-weight: 800;
+        box-shadow: 0 18px 32px rgba(37, 88, 74, 0.18);
+    }
+
+    @media (max-width: 991.98px) {
+        .sensor-status-grid,
+        .sensor-form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .sensor-hero,
+        .sensor-panel,
+        .sensor-form-shell {
+            padding: 22px;
+            border-radius: 22px;
+        }
+
+        .sensor-reading-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid sensor-page">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="sensor-hero">
+                <div class="sensor-kicker">
+                    <i class="fas fa-satellite-dish"></i>
+                    Live Sensor Forecast Mode
+                </div>
+                <h2>Forecast Sales Timing Using Live NPK Sensor Data</h2>
+                <p>Pull current soil nutrient readings from the connected sensor and combine them with the market model to build a more context-aware paddy price and demand forecast.</p>
+                <div class="sensor-hero-grid">
+                    <div class="sensor-hero-card">
+                        <div class="sensor-hero-label">Sensor Port</div>
+                        <div class="sensor-hero-value">{{ latest_sensor.port or 'N/A' }}</div>
+                    </div>
+                    <div class="sensor-hero-card">
+                        <div class="sensor-hero-label">Live Status</div>
+                        <div class="sensor-hero-value">{% if latest_sensor.connected %}Connected{% else %}Disconnected{% endif %}</div>
+                    </div>
+                    <div class="sensor-hero-card">
+                        <div class="sensor-hero-label">Forecast Start</div>
+                        <div class="sensor-hero-value">{{ today }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="sensor-panel">
+                <div class="sensor-toolbar">
+                    <div>
+                        <div class="sensor-section-title">Live Sensor Console</div>
+                        <div class="sensor-section-copy">Monitor connection status, refresh incoming data, and confirm the current NPK values before forecasting.</div>
+                    </div>
+                    <div class="sensor-toolbar-buttons">
                         <button type="button" class="btn btn-outline-primary btn-sm" id="refreshSensorBtn">
                             <i class="fas fa-sync-alt me-1"></i>Refresh
                         </button>
@@ -31,136 +318,136 @@
 
                 <div id="sensorWarnings" class="mb-3"></div>
 
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 h-100 bg-light">
-                            <div class="small text-muted">Connection</div>
-                            <div id="sensorConnection" class="fw-bold fs-5">
+                <div class="sensor-status-grid">
+                    <div class="sensor-info-card">
+                        <div class="sensor-info-label">Connection</div>
+                        <div id="sensorConnection" class="sensor-connection-state">
                                 {% if latest_sensor.connected %}
                                     <span class="text-success">Connected</span>
                                 {% else %}
                                     <span class="text-danger">Disconnected</span>
                                 {% endif %}
-                            </div>
-                            <div class="small text-muted mt-1">
-                                Port: <span id="sensorPort">{{ latest_sensor.port }}</span>
-                            </div>
-                            <div class="small text-muted">
-                                Baud: <span id="sensorBaud">{{ latest_sensor.baudrate }}</span>
-                            </div>
                         </div>
+                        <div class="small text-muted mt-2">Port: <span id="sensorPort">{{ latest_sensor.port }}</span></div>
+                        <div class="small text-muted">Baud: <span id="sensorBaud">{{ latest_sensor.baudrate }}</span></div>
                     </div>
 
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 h-100 bg-light">
-                            <div class="small text-muted">Last Update</div>
-                            <div id="sensorLastUpdate" class="fw-bold">
+                    <div class="sensor-info-card">
+                        <div class="sensor-info-label">Last Update</div>
+                        <div id="sensorLastUpdate" class="sensor-connection-state" style="font-size:1.05rem;">
                                 {{ latest_sensor.last_update or 'No reading yet' }}
-                            </div>
-                            <div class="small text-muted mt-2">Raw Serial Data</div>
-                            <div id="sensorRaw" class="small text-break">
+                        </div>
+                        <div class="small text-muted mt-3">Raw Serial Data</div>
+                        <div id="sensorRaw" class="small text-break">
                                 {{ latest_sensor.last_decoded or 'Waiting for sensor data...' }}
-                            </div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="border rounded p-3 h-100 bg-light">
-                            <div class="small text-muted mb-2">Current Live Readings</div>
-                            <div class="row text-center">
-                                <div class="col-4 mb-2">
-                                    <div class="fw-bold text-primary">N</div>
-                                    <div id="liveNitrogen">{{ latest_sensor.values.nitrogen }}</div>
-                                </div>
-                                <div class="col-4 mb-2">
-                                    <div class="fw-bold text-success">P</div>
-                                    <div id="livePhosphorus">{{ latest_sensor.values.phosphorus }}</div>
-                                </div>
-                                <div class="col-4 mb-2">
-                                    <div class="fw-bold text-warning">K</div>
-                                    <div id="livePotassium">{{ latest_sensor.values.potassium }}</div>
-                                </div>
+                    <div class="npk-card">
+                        <div class="npk-subtitle mb-2">Current Live Readings</div>
+                        <div class="sensor-reading-grid">
+                            <div class="reading-pill n">
+                                <div class="symbol">N</div>
+                                <div id="liveNitrogen" class="value">{{ latest_sensor.values.nitrogen }}</div>
+                            </div>
+                            <div class="reading-pill p">
+                                <div class="symbol">P</div>
+                                <div id="livePhosphorus" class="value">{{ latest_sensor.values.phosphorus }}</div>
+                            </div>
+                            <div class="reading-pill k">
+                                <div class="symbol">K</div>
+                                <div id="livePotassium" class="value">{{ latest_sensor.values.potassium }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-
-            <div class="form-card">
+        <div class="col-12">
+            <div class="sensor-form-shell">
+                <div class="sensor-section-title">Sensor Forecast Setup</div>
+                <div class="sensor-section-copy">Use the latest sensor values below to run the market forecast. The nutrient inputs are locked to the live reading for consistency.</div>
                 <form method="POST" action="{{ url_for('Prices_Demand_sensor_predict') }}" id="sensorForm">
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-calendar-alt"></i> Start Date</label>
-                                <input type="date" name="start_date" class="form-control"
-                                       value="{{ today }}" readonly required>
-                            </div>
+                    <div class="sensor-form-grid">
+                        <div class="sensor-field">
+                            <label><i class="fas fa-calendar-alt"></i> Start Date</label>
+                            <input type="date" name="start_date" class="form-control"
+                                   value="{{ today }}" readonly required>
+                            <small>Sensor-based forecasting starts from the current available date.</small>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-clock"></i> Number of Days</label>
-                                <select name="n_days" class="form-select" required>
-                                    <option value="7">7 Days (1 Week)</option>
-                                    <option value="14">14 Days (2 Weeks)</option>
-                                    <option value="21">21 Days (3 Weeks)</option>
-                                    <option value="30">30 Days (1 Month)</option>
-                                </select>
-                            </div>
+                        <div class="sensor-field">
+                            <label><i class="fas fa-clock"></i> Number of Days</label>
+                            <select name="n_days" class="form-select" required>
+                                <option value="7">7 Days (1 Week)</option>
+                                <option value="14">14 Days (2 Weeks)</option>
+                                <option value="21">21 Days (3 Weeks)</option>
+                                <option value="30">30 Days (1 Month)</option>
+                            </select>
+                            <small>Choose the forecast horizon for your selling strategy.</small>
+                        </div>
+                        <div class="sensor-field">
+                            <label><i class="fas fa-map-marked-alt"></i> Region</label>
+                            {% set region_opts = region_options if region_options else ['North', 'South', 'East', 'West', 'Central', 'North Central', 'Uva', 'Sabaragamuwa'] %}
+                            <select name="region" class="form-select" required>
+                                {% for region in region_opts %}
+                                <option value="{{ region }}" {% if region == default_region %}selected{% endif %}>{{ region }}</option>
+                                {% endfor %}
+                            </select>
+                            <small>Sensor values will be applied to this region's historical group.</small>
+                        </div>
+                        <div class="sensor-field">
+                            <label><i class="fas fa-seedling"></i> Rice Type</label>
+                            {% set rice_opts = rice_type_options if rice_type_options else ['Nadu', 'Samba', 'Keeri Samba'] %}
+                            <select name="rice_type" class="form-select" required>
+                                {% for rice_type in rice_opts %}
+                                <option value="{{ rice_type }}" {% if rice_type == default_rice_type %}selected{% endif %}>{{ rice_type }}</option>
+                                {% endfor %}
+                            </select>
+                            <small>Forecast is generated for this crop variety only.</small>
                         </div>
                     </div>
 
                     <h5 class="mb-3"><i class="fas fa-microchip text-success me-2"></i>Current NPK Sensor Readings</h5>
 
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-flask text-primary"></i> Nitrogen (N)</label>
-                                <div class="input-group">
-                                    <input type="number" name="nitrogen" id="nitrogen"
-                                           class="form-control" step="0.1"
-                                           value="{{ latest_sensor.values.nitrogen }}" required readonly>
-                                    <span class="input-group-text">mg/kg</span>
-                                </div>
-                                <small class="text-muted">Live current N value</small>
+                    <div class="sensor-form-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+                        <div class="sensor-field">
+                            <label><i class="fas fa-flask text-primary"></i> Nitrogen (N)</label>
+                            <div class="input-group">
+                                <input type="number" name="nitrogen" id="nitrogen"
+                                       class="form-control" step="0.1"
+                                       value="{{ latest_sensor.values.nitrogen }}" required readonly>
+                                <span class="input-group-text">mg/kg</span>
                             </div>
+                            <small>Live current N value</small>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-flask text-success"></i> Phosphorus (P)</label>
-                                <div class="input-group">
-                                    <input type="number" name="phosphorus" id="phosphorus"
-                                           class="form-control" step="0.1"
-                                           value="{{ latest_sensor.values.phosphorus }}" required readonly>
-                                    <span class="input-group-text">mg/kg</span>
-                                </div>
-                                <small class="text-muted">Live current P value</small>
+                        <div class="sensor-field">
+                            <label><i class="fas fa-flask text-success"></i> Phosphorus (P)</label>
+                            <div class="input-group">
+                                <input type="number" name="phosphorus" id="phosphorus"
+                                       class="form-control" step="0.1"
+                                       value="{{ latest_sensor.values.phosphorus }}" required readonly>
+                                <span class="input-group-text">mg/kg</span>
                             </div>
+                            <small>Live current P value</small>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><i class="fas fa-flask text-warning"></i> Potassium (K)</label>
-                                <div class="input-group">
-                                    <input type="number" name="potassium" id="potassium"
-                                           class="form-control" step="0.1"
-                                           value="{{ latest_sensor.values.potassium }}" required readonly>
-                                    <span class="input-group-text">mg/kg</span>
-                                </div>
-                                <small class="text-muted">Live current K value</small>
+                        <div class="sensor-field">
+                            <label><i class="fas fa-flask text-warning"></i> Potassium (K)</label>
+                            <div class="input-group">
+                                <input type="number" name="potassium" id="potassium"
+                                       class="form-control" step="0.1"
+                                       value="{{ latest_sensor.values.potassium }}" required readonly>
+                                <span class="input-group-text">mg/kg</span>
                             </div>
+                            <small>Live current K value</small>
                         </div>
                     </div>
 
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-success btn-lg w-100">
-                                <i class="fas fa-microchip me-2"></i>Predict with Current Live Sensor Data
-                            </button>
-                        </div>
-                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100 sensor-submit mt-4">
+                        <i class="fas fa-microchip me-2"></i>Predict With Current Live Sensor Data
+                    </button>
                 </form>
             </div>
-
         </div>
     </div>
 </div>
@@ -174,6 +461,25 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
+    }
+
+    function clearWarning() {
+        document.getElementById("sensorWarnings").innerHTML = "";
+    }
+
+    function isSensorRemoved(sensorValues) {
+        const potassium = Number(sensorValues?.potassium);
+        return Number.isFinite(potassium) && potassium < 1;
+    }
+
+    function validateSensorValues(sensorValues) {
+        if (isSensorRemoved(sensorValues)) {
+            showWarning("Sensor removed from soil. Insert again.", "warning");
+            return false;
+        }
+
+        clearWarning();
+        return true;
     }
 
     function setInputValues(sensorValues) {
@@ -204,10 +510,13 @@
 
             if (data.success) {
                 updateLiveCard(data.sensor);
+                const sensorIsValid = validateSensorValues(data.sensor.values);
 
                 if (updateForm) {
-                    setInputValues(data.sensor.values);
-                    showWarning("Live sensor values loaded into the prediction form.", "success");
+                    if (sensorIsValid) {
+                        setInputValues(data.sensor.values);
+                        showWarning("Live sensor values loaded into the prediction form.", "success");
+                    }
                 }
             } else {
                 showWarning("Could not load live sensor data.", "danger");
@@ -245,6 +554,24 @@
 
     document.getElementById("useLiveValuesBtn").addEventListener("click", function () {
         fetchLatestSensor(true);
+    });
+
+    document.getElementById("sensorForm").addEventListener("submit", function (event) {
+        const sensorValues = {
+            nitrogen: document.getElementById("nitrogen").value,
+            phosphorus: document.getElementById("phosphorus").value,
+            potassium: document.getElementById("potassium").value
+        };
+
+        if (!validateSensorValues(sensorValues)) {
+            event.preventDefault();
+        }
+    });
+
+    validateSensorValues({
+        nitrogen: document.getElementById("nitrogen").value,
+        phosphorus: document.getElementById("phosphorus").value,
+        potassium: document.getElementById("potassium").value
     });
 
     setInterval(() => fetchLatestSensor(false), 3000);

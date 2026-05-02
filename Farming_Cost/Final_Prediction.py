@@ -27,7 +27,7 @@ def predict_total_cost(input_data):
 
 
 # ---------------- Read Sensor Once ----------------
-def read_sensor_once(port="COM3", baudrate=115200, timeout=5):
+def read_sensor_once(port="COM7", baudrate=115200, timeout=5):
     try:
         ser = serial.Serial(port, baudrate, timeout=1)
         print(f"Connected to {port} at {baudrate} baud")
@@ -91,7 +91,7 @@ def read_sensor_once(port="COM3", baudrate=115200, timeout=5):
 
 # ---------------- Main ----------------
 if __name__ == "__main__":
-    data = read_sensor_once(port="COM3", baudrate=115200, timeout=10)
+    data = read_sensor_once(port="COM7", baudrate=115200, timeout=10)
     print("Sensor Data Collected:", data)
 
     if all(k in data for k in ["Latitude", "Longitude", "Temperature_C", "Humidity_%"]):

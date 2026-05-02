@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Paddy Price & Demand Predictor{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <div class="wrapper">
         <!-- Sidebar -->
@@ -49,8 +52,8 @@
                         <span>Sensor-Based Prediction</span>
                     </a>
                 </li>
-               
-                
+
+
             </ul>
 
             <div class="sidebar-footer">
@@ -73,28 +76,33 @@
                         <i class="fas fa-bars"></i>
                         <span>Menu</span>
                     </button>
-                    
+
                     <span class="navbar-welcome">
-                        <i class="fas fa-calendar-alt"></i> 
-                      
+                        <i class="fas fa-calendar-alt"></i>
+
                     </span>
-                    
+
                     <div class="ms-auto d-flex align-items-center">
                         {% if models_loaded %}
                         <span class="badge bg-success me-3">
                             <i class="fas fa-check-circle"></i> Models Loaded
                         </span>
                         {% endif %}
-                        
+
                         <div class="dropdown">
-                            <button class="btn btn-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                            <button class="btn btn-light dropdown-toggle" type="button" id="userDropdown"
+                                data-bs-toggle="dropdown">
                                 <i class="fas fa-user"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-user-circle me-2"></i>Profile</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user-circle me-2"></i>Profile</a>
+                                </li>
+                                <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -104,14 +112,15 @@
             <!-- Main Content -->
             <main class="main-content">
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show"
+                    role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
                 {% endwith %}
 
                 {% block content %}{% endblock %}
@@ -122,7 +131,7 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-md-6">
-                            <span>&copy; 2024 Paddy Price & Demand Predictor. All rights reserved.</span>
+                            <span>&copy; 2026 Paddy Price & Demand Predictor. All rights reserved.</span>
                         </div>
                         <div class="col-md-6 text-end">
                             <span>Version 1.0.0</span>
@@ -135,18 +144,18 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- Custom JS -->
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Sidebar toggle functionality
-            $('#sidebarCollapse').on('click', function() {
+            $('#sidebarCollapse').on('click', function () {
                 $('#sidebar').toggleClass('collapsed');
                 $('#content').toggleClass('expanded');
-                
+
                 // Update button text based on sidebar state
                 const $this = $(this);
                 if ($('#sidebar').hasClass('collapsed')) {
@@ -154,11 +163,11 @@
                 } else {
                     $this.find('span').text('Menu');
                 }
-                
+
                 // Store sidebar state in localStorage
                 localStorage.setItem('sidebarCollapsed', $('#sidebar').hasClass('collapsed'));
             });
-            
+
             // Check localStorage for sidebar state on page load
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
@@ -166,31 +175,31 @@
                 $('#content').addClass('expanded');
                 $('#sidebarCollapse span').text('Expand');
             }
-            
+
             // Handle mobile sidebar
             if (window.innerWidth <= 768) {
                 $('#sidebar').removeClass('collapsed');
                 $('#sidebarCollapse span').text('Menu');
-                
-                $('#sidebarCollapse').on('click', function() {
+
+                $('#sidebarCollapse').on('click', function () {
                     $('#sidebar').toggleClass('active');
                 });
             }
-            
+
             // Handle window resize
-            $(window).resize(function() {
+            $(window).resize(function () {
                 if (window.innerWidth <= 768) {
                     $('#sidebar').removeClass('collapsed');
                     $('#content').removeClass('expanded');
                     $('#sidebarCollapse span').text('Menu');
                 }
             });
-            
+
             // Close sidebar when clicking outside on mobile
-            $(document).on('click', function(event) {
+            $(document).on('click', function (event) {
                 if (window.innerWidth <= 768) {
-                    if (!$(event.target).closest('#sidebar').length && 
-                        !$(event.target).closest('#sidebarCollapse').length && 
+                    if (!$(event.target).closest('#sidebar').length &&
+                        !$(event.target).closest('#sidebarCollapse').length &&
                         $('#sidebar').hasClass('active')) {
                         $('#sidebar').removeClass('active');
                     }
@@ -198,7 +207,8 @@
             });
         });
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

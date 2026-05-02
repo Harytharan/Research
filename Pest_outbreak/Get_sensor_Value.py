@@ -6,7 +6,7 @@ import sys
 
 class SerialMonitor:
     def __init__(self):
-        self.port = "COM3"
+        self.port = "COM7"
         self.baudrate = 115200
 
         self.ser = None

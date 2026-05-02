@@ -105,30 +105,30 @@ def load_image_model():
     try:
         model_path = os.path.join(PEST_OUTBREAK_DIR, 'best_pest_model.h5')
         meta_path = os.path.join(PEST_OUTBREAK_DIR, 'paddy_meta.joblib')
-        train_path = os.path.join(PEST_OUTBREAK_DIR, 'PestDataset', 'train')
+        class_indices_path = os.path.join(PEST_OUTBREAK_DIR, 'class_indices.json')
         
         print(f"\n Checking image model files:")
         print(f"   Model path: {model_path}")
         print(f"   Model exists: {os.path.exists(model_path)}")
+        print(f"   Class indices path: {class_indices_path}")
+        print(f"   Class indices exist: {os.path.exists(class_indices_path)}")
         print(f"   Meta path: {meta_path}")
         print(f"   Meta exists: {os.path.exists(meta_path)}")
         
-        if os.path.exists(model_path) and os.path.exists(meta_path):
+        if os.path.exists(model_path):
             # Load model
             image_model = load_model(model_path)
-            image_meta = joblib.load(meta_path)
+            image_meta = joblib.load(meta_path) if os.path.exists(meta_path) else {}
             
-            # Get class labels from train folder
-            if os.path.exists(train_path):
-                image_class_labels = sorted([
-                    d for d in os.listdir(train_path)
-                    if os.path.isdir(os.path.join(train_path, d))
-                ])
+            if prt is not None and hasattr(prt, 'load_class_labels'):
+                image_class_labels = prt.load_class_labels()
                 print(f" Found {len(image_class_labels)} pest classes: {image_class_labels}")
             else:
-                print(" Train folder not found, using metadata")
+                print(" Image label loader unavailable, using metadata fallback")
                 if 'class_names' in image_meta:
                     image_class_labels = image_meta['class_names']
+                else:
+                    image_class_labels = []
             
             print(" Image model loaded successfully")
             return True
@@ -312,14 +312,17 @@ def image_predict():
                 if image_class_labels and predicted_class_idx < len(image_class_labels):
                     predicted_class_name = image_class_labels[predicted_class_idx]
                 else:
-                    predicted_class_name = f"Class_{predicted_class_idx}"
+                    predicted_class_name = f"Unknown class {predicted_class_idx}"
+
+                if hasattr(prt, 'NON_PEST_LABELS') and predicted_class_name.lower() in prt.NON_PEST_LABELS:
+                    predicted_class_name = 'Non-pest item'
                 
                 # Get recommended action
                 raw_action_map = image_meta.get("action_map", {}) if image_meta else {}
                 action_map = {k.lower(): v for k, v in raw_action_map.items()}
                 recommended_action = action_map.get(
                     predicted_class_name.lower(),
-                    "No recommended action found."
+                    "No pest detected in the image." if predicted_class_name == 'Non-pest item' else "No recommended action found."
                 )
                 
                 result = {

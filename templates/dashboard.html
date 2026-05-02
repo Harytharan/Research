@@ -2,6 +2,153 @@
 
 {% block title %}Dashboard — PaddyPredict{% endblock %}
 
+{% block extra_css %}
+<style>
+    .history-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+    }
+
+    .history-spotlight {
+        position: relative;
+        overflow: hidden;
+        border-radius: 24px;
+        padding: 22px;
+        background: linear-gradient(135deg, #f8fbf5 0%, #eef6ee 55%, #f7f0dc 100%);
+        border: 1px solid rgba(46, 125, 80, 0.12);
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+        min-height: 100%;
+    }
+
+    .history-spotlight::after {
+        content: "";
+        position: absolute;
+        inset: auto -40px -55px auto;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: rgba(46, 125, 80, 0.09);
+    }
+
+    .history-spotlight > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .history-topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .history-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: .76rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        background: rgba(46, 125, 80, 0.10);
+        color: #1f6a43;
+    }
+
+    .history-time {
+        font-size: .8rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+    .history-window {
+        margin: 0 0 14px;
+        color: #1f2937;
+        font-size: 1.08rem;
+        font-weight: 700;
+    }
+
+    .history-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .history-metric {
+        padding: 14px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .history-metric-label {
+        font-size: .76rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    .history-metric-value {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #163124;
+    }
+
+    .history-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .history-pill {
+        padding: 7px 11px;
+        border-radius: 999px;
+        font-size: .8rem;
+        font-weight: 700;
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        color: #334155;
+    }
+
+    .history-note {
+        color: #475569;
+        font-size: .9rem;
+        margin-bottom: 16px;
+    }
+
+    .history-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #17673b;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .history-empty {
+        border-radius: 24px;
+        padding: 32px 24px;
+        text-align: center;
+        background: linear-gradient(135deg, #fffdf6, #f6f8ef);
+        border: 1px dashed rgba(148, 163, 184, 0.55);
+        color: #64748b;
+    }
+
+    .history-empty i {
+        font-size: 2.4rem;
+        color: #c0c9ae;
+        margin-bottom: 14px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-4">
 
@@ -76,6 +223,66 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="section-block">
+        <div class="section-heading">
+            <div>
+                <h3><i class="fas fa-clock-rotate-left text-success me-2"></i>Recent Price Forecasts</h3>
+                <p class="section-sub">Saved market predictions from your latest Price & Demand runs.</p>
+            </div>
+            <a href="{{ url_for('Prices_Demand_history') }}" class="qc-btn" style="width:auto; padding:10px 18px;">
+                <span>Open Full History</span> <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        {% if price_history %}
+        <div class="history-strip">
+            {% for item in price_history %}
+            <div class="history-spotlight">
+                <div class="history-topline">
+                    <span class="history-tag"><i class="fas fa-chart-line"></i> {{ item.prediction_type }}</span>
+                    <span class="history-time">{{ item.timestamp }}</span>
+                </div>
+                <p class="history-window">{{ item.start_date }} to {{ item.end_date }}</p>
+
+                <div class="history-metrics">
+                    <div class="history-metric">
+                        <div class="history-metric-label">Average Price</div>
+                        <div class="history-metric-value">Rs. {{ '%.2f'|format(item.avg_price) }}</div>
+                    </div>
+                    <div class="history-metric">
+                        <div class="history-metric-label">Average Demand</div>
+                        <div class="history-metric-value">{{ '%.0f'|format(item.avg_demand) }} t</div>
+                    </div>
+                </div>
+
+                <div class="history-pills">
+                    <span class="history-pill"><i class="fas fa-arrow-trend-up me-1"></i> Price {{ item.price_trend }}</span>
+                    <span class="history-pill"><i class="fas fa-boxes-stacked me-1"></i> Demand {{ item.demand_trend }}</span>
+                    {% if item.sensor_data %}
+                    <span class="history-pill"><i class="fas fa-microchip me-1"></i> Sensor Assisted</span>
+                    {% endif %}
+                </div>
+
+                <div class="history-note">
+                    Recommendation: {{ item.recommended_action or 'Monitor the market conditions.' }}
+                    {% if item.recommended_date %}
+                    on {{ item.recommended_date }}
+                    {% endif %}
+                </div>
+
+                <a href="{{ url_for('Prices_Demand_history') }}" class="history-cta">View saved forecast <i class="fas fa-arrow-right"></i></a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="history-empty">
+            <i class="fas fa-seedling"></i>
+            <strong style="display:block; color:#1f2937; margin-bottom:8px;">No saved Price & Demand forecasts yet.</strong>
+            Your next market prediction will be stored automatically and will appear here.
+        </div>
+        {% endif %}
     </div>
 
     <!-- System Status -->
